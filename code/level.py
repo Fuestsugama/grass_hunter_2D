@@ -4,7 +4,7 @@ from settings import *
 from tile import Tile
 from player import Player
 from debug import debug
-
+from weapon import Weapon 
 
 class Level:
     def __init__(self):
@@ -15,6 +15,9 @@ class Level:
         # sprite group setup
         self.visible_sprites = YsortCameraGroup()
         self.obstacle_sprites = pygame.sprite.Group()
+
+        # attack sprites 
+        self.current_attack = None
 
         # sprite setup
         self.create_map()
@@ -44,7 +47,15 @@ class Level:
                     groups = [self.visible_sprites] if properties.get('walkable') else [self.visible_sprites, self.obstacle_sprites]
                     Tile((x * TILESIZE, y * TILESIZE), groups, sprite_type, surf)
 
-        self.player = Player((2050,1500), [self.visible_sprites], self.obstacle_sprites)
+        self.player = Player((2050,1500), [self.visible_sprites], self.obstacle_sprites, self.create_attack, self.destroy_attack)
+
+    def create_attack (self):
+        self.current_attack = Weapon(self.player,[self.visible_sprites])
+
+    def destroy_attack(self):
+        if self.current_attack:
+            self.current_attack.kill()
+        self.current_attack = None
 
     def run(self):
 

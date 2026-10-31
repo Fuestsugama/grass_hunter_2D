@@ -9,12 +9,14 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 - Camera that follows the player, with Y-sorting (sprites further down are drawn on top)
 - World map made in Tiled: floor, details, grass, objects and invisible walls (coast, cliffs)
 - Player animations: walk, idle and attack in 4 directions
+- Weapons (sword, lance, axe, rapier, sai) shown in the player's hand when attacking
 
 ## Controls
 | Key | Action |
 |---|---|
 | Arrow keys | Move |
 | Space | Attack |
+| Q | Switch weapon |
 | Left Ctrl | Magic |
 
 ## Run it
@@ -38,6 +40,8 @@ maps/     world_map.tmx (Tiled map read by the game) and old CSV exports
   The tilesets, the map elements and the *Hunter* character come from this pack.
   The player frames in `assets/graphics/player/` were cut from the Hunter sprite sheets
   (`Walk.png`, `Idle.png`, `Attack.png`) and scaled from 16 px to 64 px.
+  The weapons in `assets/graphics/weapons/` come from the pack's `Items/Weapons` folder
+  (`Sprite.png` = full, `SpriteInHand.png` = down, rotated for up/left/right), scaled to 64 px.
 - **Code structure** inspired by the Zelda-style pygame tutorial by
   [Clear Code](https://www.youtube.com/@ClearCode).
 - **Map editor**: [Tiled](https://www.mapeditor.org/), map loading with [pytmx](https://github.com/bitcraft/pytmx).
