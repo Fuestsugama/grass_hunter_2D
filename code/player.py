@@ -6,7 +6,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = pygame.image.load('../assets/graphics/test/player.png').convert_alpha()
         self.rect = self.image.get_rect(topleft = pos)
-        self.hitbox = self.rect.inflate(0,-26)
+        self.hitbox = self.rect.inflate(-20,-26 ) # Reduce player hitbox making the game more realistic
 
         # movement
         self.direction = pygame.math.Vector2()

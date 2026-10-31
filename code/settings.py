@@ -3,6 +3,7 @@ WIDTH    = 1280
 HEIGTH   = 720
 FPS      = 60
 TILESIZE = 64
+MAP_TILESIZE = 16 # tile size used in Tiled (world_map.tmx)
  
 WORLD_MAP = [
 ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x'],
