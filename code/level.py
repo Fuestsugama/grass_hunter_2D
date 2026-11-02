@@ -20,6 +20,8 @@ class Level:
 
         # attack sprites 
         self.current_attack = None
+        self.attack_sprites = pygame.sprite.Group()
+        self.attackable_sprites = pygame.sprite.Group()
 
         # sprite setup
         self.create_map()
@@ -31,23 +33,45 @@ class Level:
         tmx_data = load_pygame('../maps/world_map.tmx')
         floor_surf = pygame.Surface((tmx_data.width * TILESIZE, tmx_data.height * TILESIZE))
 
-        for layer in tmx_data.layers:
-            for x, y, gid in layer:
-                if not gid:
-                    continue
-                pos = (x * TILESIZE, y * TILESIZE)
-                surf = pygame.transform.scale_by(tmx_data.get_tile_image_by_gid(gid), TILESIZE // MAP_TILESIZE)
-                properties = tmx_data.get_tile_properties_by_gid(gid) or {}
+        layouts = {
+            'floor': ['floor', 'detail'],             # flat ground: drawn once into the floor image
+            'boundary': ['floor block'],              # invisible walls (coast, cliffs)
+            'grass': ['grass'],
+            'object': ['object', 'object layer 2'],
+            'entities': ['entities'],                 # monsters placed in Tiled, "monster" property = folder name
+        }
 
-                if layer.name in ('floor', 'detail'):   # flat ground: drawn once into the floor image
-                    floor_surf.blit(surf, pos)
-                elif layer.name == 'floor block':       # invisible walls (coast, cliffs)
-                    Tile(pos, [self.obstacle_sprites], 'invisible')
-                elif layer.name == 'entities':          # monsters placed in Tiled, "monster" property = folder name
-                    Enemy(properties['monster'], pos, [self.visible_sprites], self.obstacle_sprites)
-                else:                                   # grass and objects: solid unless "walkable = true" in Tiled
-                    groups = [self.visible_sprites] if properties.get('walkable') else [self.visible_sprites, self.obstacle_sprites]
-                    Tile(pos, groups, 'grass' if layer.name == 'grass' else 'object', surf)
+        for style, layer_names in layouts.items():
+            for layer_name in layer_names:
+                for col_index, row_index, gid in tmx_data.get_layer_by_name(layer_name):
+                    if gid:
+                        x = col_index * TILESIZE
+                        y = row_index * TILESIZE
+                        surf = pygame.transform.scale_by(tmx_data.get_tile_image_by_gid(gid), TILESIZE // MAP_TILESIZE)
+                        properties = tmx_data.get_tile_properties_by_gid(gid) or {}
+
+                        if style == 'floor':
+                            floor_surf.blit(surf, (x,y))
+
+                        if style == 'boundary':
+                            Tile((x,y), [self.obstacle_sprites], 'invisible')
+
+                        if style == 'grass':
+                            Tile((x,y), [self.visible_sprites, self.obstacle_sprites, self.attackable_sprites], 'grass', surf)
+
+                        if style == 'object':   # solid unless "walkable = true" in Tiled
+                            if properties.get('walkable'):
+                                Tile((x,y), [self.visible_sprites], 'object', surf)
+                            else:
+                                Tile((x,y), [self.visible_sprites, self.obstacle_sprites], 'object', surf)
+
+                        if style == 'entities':
+                            Enemy(
+                                properties['monster'],
+                                (x,y),
+                                [self.visible_sprites, self.attackable_sprites],
+                                self.obstacle_sprites,
+                                self.damage_player)
 
         self.visible_sprites.floor_surf = floor_surf
         self.visible_sprites.floor_rect = floor_surf.get_rect(topleft = (0,0))
@@ -61,7 +85,7 @@ class Level:
             self.create_magic)
 
     def create_attack (self):
-        self.current_attack = Weapon(self.player,[self.visible_sprites])
+        self.current_attack = Weapon(self.player,[self.visible_sprites, self.attack_sprites])
 
     def create_magic(self, style, strength, cost):
         print(style, strength, cost)
@@ -71,12 +95,32 @@ class Level:
             self.current_attack.kill()
         self.current_attack = None
 
+    def player_attack_logic(self):
+        if self.attack_sprites:
+            for attack_sprite in self.attack_sprites:
+                collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.attackable_sprites, False)
+                if collision_sprites:
+                    for target_sprite in collision_sprites:
+                        if target_sprite.sprite_type == 'grass':
+                            target_sprite.kill()
+                        else:
+                            target_sprite.get_damage(self.player, attack_sprite.sprite_type)
+
+    def damage_player(self, amount, attack_type):
+        if self.player.vulnerable:
+            self.player.health -= amount
+            self.player.vulnerable = False
+            self.player.hurt_time = pygame.time.get_ticks()
+            # spawn particles 
+
+
     def run(self):
 
         #update and draw the game
         self.visible_sprites.custom_draw(self.player)
         self.visible_sprites.update()
         self.visible_sprites.enemy_update(self.player)
+        self.player_attack_logic()
         self.ui.display(self.player)
        
 class YsortCameraGroup(pygame.sprite.Group):

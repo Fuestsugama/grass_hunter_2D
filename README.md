@@ -12,6 +12,8 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 - Weapons (sword, lance, axe, rapier, sai) shown in the player's hand when attacking
 - UI: health and energy bars, experience, weapon and magic selection boxes
 - Enemies placed in Tiled (entities layer) that notice, chase and attack the player, plus a Tengu boss
+- Player / enemy interaction: weapons damage and knock back enemies, enemies damage the player,
+  grass can be cut, short invincibility with flickering after a hit
 
 ## Controls
 | Key | Action |
