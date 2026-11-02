@@ -5,6 +5,7 @@ from tile import Tile
 from player import Player
 from debug import debug
 from weapon import Weapon 
+from ui import UI
 
 class Level:
     def __init__(self):
@@ -21,6 +22,9 @@ class Level:
 
         # sprite setup
         self.create_map()
+
+        # userinterface
+        self.ui = UI()
 
     def create_map (self):
         tmx_data = load_pygame('../maps/world_map.tmx')
@@ -47,10 +51,19 @@ class Level:
                     groups = [self.visible_sprites] if properties.get('walkable') else [self.visible_sprites, self.obstacle_sprites]
                     Tile((x * TILESIZE, y * TILESIZE), groups, sprite_type, surf)
 
-        self.player = Player((2050,1500), [self.visible_sprites], self.obstacle_sprites, self.create_attack, self.destroy_attack)
+        self.player = Player(
+            (2050,1500), 
+            [self.visible_sprites], 
+            self.obstacle_sprites, 
+            self.create_attack, 
+            self.destroy_attack,
+            self.create_magic)
 
     def create_attack (self):
         self.current_attack = Weapon(self.player,[self.visible_sprites])
+
+    def create_magic(self, style, strength, cost):
+        print(style, strength, cost)
 
     def destroy_attack(self):
         if self.current_attack:
@@ -62,8 +75,8 @@ class Level:
         #update and draw the game
         self.visible_sprites.custom_draw(self.player)
         self.visible_sprites.update()
+        self.ui.display(self.player)
        
-
 class YsortCameraGroup(pygame.sprite.Group):
 
     def __init__(self):

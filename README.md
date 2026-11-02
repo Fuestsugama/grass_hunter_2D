@@ -10,6 +10,7 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 - World map made in Tiled: floor, details, grass, objects and invisible walls (coast, cliffs)
 - Player animations: walk, idle and attack in 4 directions
 - Weapons (sword, lance, axe, rapier, sai) shown in the player's hand when attacking
+- UI: health and energy bars, experience, weapon and magic selection boxes
 
 ## Controls
 | Key | Action |
@@ -17,7 +18,8 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 | Arrow keys | Move |
 | Space | Attack |
 | Q | Switch weapon |
-| Left Ctrl | Magic |
+| E | Switch magic |
+| Left Ctrl | Cast magic |
 
 ## Run it
 ```bash
@@ -42,6 +44,9 @@ maps/     world_map.tmx (Tiled map read by the game) and old CSV exports
   (`Walk.png`, `Idle.png`, `Attack.png`) and scaled from 16 px to 64 px.
   The weapons in `assets/graphics/weapons/` come from the pack's `Items/Weapons` folder
   (`Sprite.png` = full, `SpriteInHand.png` = down, rotated for up/left/right), scaled to 64 px.
+  The magic icons (`Ui/Skill Icon/Spell`), the magic effect frames in `assets/graphics/particles/`
+  (`FX/Elemental/Flam`, `FX/Magic/Spark`, `FX/Magic/Aura`) and the UI font (`Ui/Font/NormalFont.ttf`)
+  also come from the pack.
 - **Code structure** inspired by the Zelda-style pygame tutorial by
   [Clear Code](https://www.youtube.com/@ClearCode).
 - **Map editor**: [Tiled](https://www.mapeditor.org/), map loading with [pytmx](https://github.com/bitcraft/pytmx).
