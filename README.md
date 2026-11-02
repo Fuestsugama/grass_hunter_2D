@@ -11,6 +11,7 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 - Player animations: walk, idle and attack in 4 directions
 - Weapons (sword, lance, axe, rapier, sai) shown in the player's hand when attacking
 - UI: health and energy bars, experience, weapon and magic selection boxes
+- Enemies placed in Tiled (entities layer) that notice, chase and attack the player, plus a Tengu boss
 
 ## Controls
 | Key | Action |
@@ -47,6 +48,9 @@ maps/     world_map.tmx (Tiled map read by the game) and old CSV exports
   The magic icons (`Ui/Skill Icon/Spell`), the magic effect frames in `assets/graphics/particles/`
   (`FX/Elemental/Flam`, `FX/Magic/Spark`, `FX/Magic/Aura`) and the UI font (`Ui/Font/NormalFont.ttf`)
   also come from the pack.
+  The enemies (Snake3, Slime3, Flam, TRex, GoldRacoon, Mole, SpiderYellow) come from `Actor/Monster`
+  and the boss TenguBlue from `Actor/Boss`: originals in `assets/actor/enemies/`,
+  frames cut in `assets/graphics/monsters/`.
 - **Code structure** inspired by the Zelda-style pygame tutorial by
   [Clear Code](https://www.youtube.com/@ClearCode).
 - **Map editor**: [Tiled](https://www.mapeditor.org/), map loading with [pytmx](https://github.com/bitcraft/pytmx).

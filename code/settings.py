@@ -39,3 +39,16 @@ magic_data = {
     'flame' : {'strength': 5, 'cost': 20, 'graphic' : '../assets/graphics/particles/flame/fire.png'},
     'heal' : {'strength': 20, 'cost': 10, 'graphic' : '../assets/graphics/particles/heal/heal.png'}
 }
+
+
+# enemy
+monster_data = {
+    'slime3' : {'health': 80, 'exp': 50, 'damage': 10, 'attack_type': 'slash','speed': 2, 'resistance': 3, 'attack_radius': 80, 'notice_radius': 300, 'attack_sound':'../assets/audio/enemy_attack.wav'},
+    'flam' : {'health': 90, 'exp': 100, 'damage': 30, 'attack_type': 'fireball','speed': 3, 'resistance': 3, 'attack_radius': 120, 'notice_radius': 400, 'attack_sound':'../assets/audio/fireball.wav'},
+    'gold_racoon' : {'health': 70, 'exp': 80, 'damage': 20, 'attack_type': 'claw','speed': 3, 'resistance': 3, 'attack_radius': 50, 'notice_radius': 300, 'attack_sound':'../assets/audio/monster_attack.wav'},
+    'trex' : {'health': 120, 'exp': 150, 'damage': 40, 'attack_type': 'bite','speed': 2, 'resistance': 3, 'attack_radius': 80, 'notice_radius': 350, 'attack_sound':'../assets/audio/monster_attack.wav'},
+    'spider_yellow' : {'health': 60, 'exp': 70, 'damage': 15, 'attack_type': 'bite','speed': 4, 'resistance': 3, 'attack_radius': 40, 'notice_radius': 250, 'attack_sound':'../assets/audio/monster_attack.wav'},
+    'mole' : {'health': 100, 'exp': 120, 'damage': 25, 'attack_type': 'dig','speed': 2, 'resistance': 3, 'attack_radius': 60, 'notice_radius': 300, 'attack_sound':'../assets/audio/monster_attack.wav'},
+    'snake3' : {'health': 70, 'exp': 60, 'damage': 15, 'attack_type': 'bite','speed': 3, 'resistance': 3, 'attack_radius': 50, 'notice_radius': 300, 'attack_sound':'../assets/audio/monster_attack.wav'},
+    'tengu_blue' : {'health': 300, 'exp': 300, 'damage': 50, 'attack_type': 'slash','speed': 3, 'resistance': 3, 'attack_radius': 100, 'notice_radius': 400, 'attack_sound':'../assets/audio/monster_attack.wav'},
+}   

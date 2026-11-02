@@ -6,6 +6,7 @@ from player import Player
 from debug import debug
 from weapon import Weapon 
 from ui import UI
+from enemy import Enemy
 
 class Level:
     def __init__(self):
@@ -28,28 +29,28 @@ class Level:
 
     def create_map (self):
         tmx_data = load_pygame('../maps/world_map.tmx')
-        scale = TILESIZE // MAP_TILESIZE
-
-        # flat layers (floor + detail): drawn once into the floor image, under everything
         floor_surf = pygame.Surface((tmx_data.width * TILESIZE, tmx_data.height * TILESIZE))
-        for layer_name in ('floor', 'detail'):
-            for x, y, surf in tmx_data.get_layer_by_name(layer_name).tiles():
-                floor_surf.blit(pygame.transform.scale_by(surf, scale), (x * TILESIZE, y * TILESIZE))
+
+        for layer in tmx_data.layers:
+            for x, y, gid in layer:
+                if not gid:
+                    continue
+                pos = (x * TILESIZE, y * TILESIZE)
+                surf = pygame.transform.scale_by(tmx_data.get_tile_image_by_gid(gid), TILESIZE // MAP_TILESIZE)
+                properties = tmx_data.get_tile_properties_by_gid(gid) or {}
+
+                if layer.name in ('floor', 'detail'):   # flat ground: drawn once into the floor image
+                    floor_surf.blit(surf, pos)
+                elif layer.name == 'floor block':       # invisible walls (coast, cliffs)
+                    Tile(pos, [self.obstacle_sprites], 'invisible')
+                elif layer.name == 'entities':          # monsters placed in Tiled, "monster" property = folder name
+                    Enemy(properties['monster'], pos, [self.visible_sprites], self.obstacle_sprites)
+                else:                                   # grass and objects: solid unless "walkable = true" in Tiled
+                    groups = [self.visible_sprites] if properties.get('walkable') else [self.visible_sprites, self.obstacle_sprites]
+                    Tile(pos, groups, 'grass' if layer.name == 'grass' else 'object', surf)
+
         self.visible_sprites.floor_surf = floor_surf
         self.visible_sprites.floor_rect = floor_surf.get_rect(topleft = (0,0))
-
-        # invisible walls (coast, cliffs)
-        for x, y, surf in tmx_data.get_layer_by_name('floor block').tiles():
-            Tile((x * TILESIZE, y * TILESIZE), [self.obstacle_sprites], 'invisible')
-
-        # grass and objects: Y-sorted, and solid unless the tile has "walkable = true" in Tiled
-        for layer_name, sprite_type in (('grass', 'grass'), ('object', 'object'), ('object layer 2', 'object')):
-            for x, y, gid in tmx_data.get_layer_by_name(layer_name):
-                if gid:
-                    surf = pygame.transform.scale_by(tmx_data.get_tile_image_by_gid(gid), scale)
-                    properties = tmx_data.get_tile_properties_by_gid(gid) or {}
-                    groups = [self.visible_sprites] if properties.get('walkable') else [self.visible_sprites, self.obstacle_sprites]
-                    Tile((x * TILESIZE, y * TILESIZE), groups, sprite_type, surf)
 
         self.player = Player(
             (2050,1500), 
@@ -75,6 +76,7 @@ class Level:
         #update and draw the game
         self.visible_sprites.custom_draw(self.player)
         self.visible_sprites.update()
+        self.visible_sprites.enemy_update(self.player)
         self.ui.display(self.player)
        
 class YsortCameraGroup(pygame.sprite.Group):
@@ -103,3 +105,8 @@ class YsortCameraGroup(pygame.sprite.Group):
         for sprite in sorted(self.sprites(), key = lambda sprite: sprite.rect.centery):
             offset_pos= sprite.rect.topleft - self.offset
             self.display_surface.blit(sprite.image, offset_pos)
+
+    def enemy_update(self, player):
+        enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite, 'sprite_type') and sprite.sprite_type == 'enemy']
+        for enemy in enemy_sprites:
+            enemy.enemy_update(player)
