@@ -14,6 +14,8 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 - Enemies placed in Tiled (entities layer) that notice, chase and attack the player, plus a Tengu boss
 - Player / enemy interaction: weapons damage and knock back enemies, enemies damage the player,
   grass can be cut, short invincibility with flickering after a hit
+- Particles: leaves flying out of cut grass, an effect on the player for each monster attack
+  (slash, claw, fireball, bite, dig) and a death animation for each monster
 
 ## Controls
 | Key | Action |
@@ -50,6 +52,10 @@ maps/     world_map.tmx (Tiled map read by the game) and old CSV exports
   The magic icons (`Ui/Skill Icon/Spell`), the magic effect frames in `assets/graphics/particles/`
   (`FX/Elemental/Flam`, `FX/Magic/Spark`, `FX/Magic/Aura`) and the UI font (`Ui/Font/NormalFont.ttf`)
   also come from the pack.
+  The attack and death particles (claw, slash, sparkle, leaf_attack, thunder, squid_ink,
+  raccoon_dash, spirit_explosion, and fireball / bite / dig for the monsters' attacks) were cut from
+  the pack's `FX` sprite sheets, and the grass leaves
+  (leaf1 to leaf6) were made from `FX/Particle/Leaf.png` and `FX/Particle/Grass.png`, all scaled ×4.
   The enemies (Snake3, Slime3, Flam, TRex, GoldRacoon, Mole, SpiderYellow) come from `Actor/Monster`
   and the boss TenguBlue from `Actor/Boss`: originals in `assets/actor/enemies/`,
   frames cut in `assets/graphics/monsters/`.
