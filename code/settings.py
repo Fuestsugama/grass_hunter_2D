@@ -5,7 +5,8 @@ FPS      = 60
 TILESIZE = 64
 MAP_TILESIZE = 16 # tile size used in Tiled (world_map.tmx)
 
-#UI 
+
+# UI  
 BAR_HEIGHT = 20
 HEALTH_BAR_WIDTH = 200
 ENERGY_BAR_WIDTH = 140
@@ -19,10 +20,17 @@ UI_BG_COLOR = '#222222'
 UI_BORDER_COLOR = '#111111' 
 TEXT_COLOR = '#EEEEEE'
 
-#ui colors
+# ui colors
 HEALTH_COLOR = 'red'
 ENERGY_COLOR = 'blue'
 UI_BORDER_COLOR_ACTIVE = 'gold'
+
+# upgrade menu 
+TEXT_COLOR_SELECTED = '#111111'
+BAR_C0LOR = '#EEEEEE'
+BAR_C0LOR_SELECTED = '#111111'
+UPGRADE_BG_COLOR_SELECTED = '#EEEEEE'
+
 
 
 # Weapons 
