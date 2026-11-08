@@ -11,6 +11,7 @@ from enemy import Enemy
 from particles import AnimationPlayer
 from magic import MagicPlayer 
 from upgrade import Upgrade
+from game_over import GameOver
 
 class Level:
     def __init__(self):
@@ -18,6 +19,7 @@ class Level:
         # get the display surface 
         self.display_surface = pygame.display.get_surface()
         self.game_paused = False
+        self.game_over = False 
 
         # sprite group setup
         self.visible_sprites = YsortCameraGroup()
@@ -34,6 +36,13 @@ class Level:
         # userinterface
         self.ui = UI()
         self.upgrade = Upgrade(self.player)
+        self.game_over_screen = GameOver()
+
+        # sounds
+        self.game_over_sound = pygame.mixer.Sound('../audio/game_over.wav')
+        self.game_over_sound.set_volume(0.5)
+        self.game_over_music = pygame.mixer.Sound('../audio/game_over.ogg')
+        self.game_over_music.set_volume(0.4)
 
         # particles
         self.animation_player = AnimationPlayer()
@@ -133,9 +142,20 @@ class Level:
             self.player.health -= amount
             self.player.vulnerable = False
             self.player.hurt_time = pygame.time.get_ticks()
+            
             # spawn particles 
             self.animation_player.create_particles(attack_type,self.player.rect.center,[self.visible_sprites])
 
+            # death mechanism 
+            if self.player.health <=0 :
+                self.player.health = 0  # to be sure that health never goes to negative values
+                self.game_over = True
+                pygame.mixer.stop()                     # stops the main music (and every other sound)
+                self.game_over_sound.play()             # the jingle
+                self.game_over_music.play(loops = -1)   # sad music that loops on the game over screen
+
+
+            
     def trigger_death_particles(self, pos, particle_type):
         self.animation_player.create_particles(particle_type, pos,[self.visible_sprites])
 
@@ -150,7 +170,9 @@ class Level:
         self.visible_sprites.custom_draw(self.player)
         self.ui.display(self.player)
 
-        if self.game_paused:
+        if self.game_over:
+            self.game_over_screen.display()
+        elif self.game_paused:
             self.upgrade.display()
         else:
             self.visible_sprites.update()

@@ -4,6 +4,12 @@ HEIGTH   = 720
 FPS      = 60
 TILESIZE = 64
 MAP_TILESIZE = 16 # tile size used in Tiled (world_map.tmx)
+HITBOX_OFFSET = {
+    'player' : -26,
+    'object' : -40, 
+    'grass' : -10,
+    'invisible' : 0
+}
 
 
 # UI  

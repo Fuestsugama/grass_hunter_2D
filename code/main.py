@@ -16,6 +16,11 @@ class Game:
 
         self.level = Level()
 
+        # sounds 
+        self.main_sound = pygame.mixer.Sound('../audio/main.ogg')
+        self.main_sound.set_volume(0.5)
+        self.main_sound.play(loops = -1)
+
     def run(self):
         while True:
             for event in pygame.event.get():
@@ -23,10 +28,14 @@ class Game:
                     pygame.quit()
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_m:
+                    if event.key == pygame.K_m and not self.level.game_over:
                         self.level.toggle_menu()
+                    if event.key == pygame.K_r and self.level.game_over:
+                        pygame.mixer.stop()                  # stops the game over music
+                        self.level = Level()
+                        self.main_sound.play(loops = -1)     # main music starts again
 
-            self.screen.fill('black')
+            self.screen.fill(WATER_COLOR)
             self.level.run()
             pygame.display.update()
             self.clock.tick(FPS)
