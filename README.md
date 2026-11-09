@@ -3,7 +3,11 @@
 A small top-down action RPG in the style of the classic Zelda games, written in Python with pygame.
 The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pytmx.
 
-## Features so far
+![Grass Hunter cover](docs/cover.jpg)
+
+📄 **[Visual guide (PDF)](docs/grass_hunter_visual.pdf)**: world map, hero, bestiary, weapons and magic.
+
+## Features
 - Window, game loop and settings
 - Player movement with collisions (smaller hitbox for realistic contacts)
 - Camera that follows the player, with Y-sorting (sprites further down are drawn on top)
@@ -16,6 +20,12 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
   grass can be cut, short invincibility with flickering after a hit
 - Particles: leaves flying out of cut grass, an effect on the player for each monster attack
   (slash, claw, fireball, bite, dig) and a death animation for each monster
+- Magic: a heal spell and a flame spell cast in the facing direction, both costing energy
+  that slowly refills
+- Experience from slain monsters, spent in an upgrade menu (health, energy, attack, magic, speed)
+  with a max value for each stat
+- Death: a game over screen with its own music, press R to restart
+- Sound: background music and effects for weapons, spells, hits, deaths and monster attacks
 
 ## Controls
 | Key | Action |
@@ -25,6 +35,8 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 | Q | Switch weapon |
 | E | Switch magic |
 | Left Ctrl | Cast magic |
+| M | Open / close the upgrade menu (arrows to choose, Space to upgrade) |
+| R | Restart after a game over |
 
 ## Run it
 ```bash
@@ -35,9 +47,15 @@ python code/main.py
 
 ## Project structure
 ```
-assets/   graphics (tilesets, Hunter character, player animation frames)
-code/     game source (main.py is the entry point)
-maps/     world_map.tmx (Tiled map read by the game) and old CSV exports
+assets/
+  graphics/   sprites used by the game: player, monsters, weapons, particles, font
+  audio/      music and sound effects
+  tilesets/   Tiled tilesets used by the map
+  actor/      original sprite sheets (Hunter character, enemies)
+  animated/, vehicles/   extra Tiled tilesets from the asset pack
+code/         game source (main.py is the entry point)
+maps/         world_map.tmx (Tiled map read by the game) and old CSV exports
+docs/         visual guide PDF and cover image
 ```
 
 ## Credits

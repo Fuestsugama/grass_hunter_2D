@@ -46,8 +46,8 @@ class Enemy(Entity):
         self.invulnerability_duration = 300
 
         # sounds
-        self.death_sound = pygame.mixer.Sound('../audio/death.wav')
-        self.hit_sound = pygame.mixer.Sound('../audio/hit.wav')
+        self.death_sound = pygame.mixer.Sound('../assets/audio/death.wav')
+        self.hit_sound = pygame.mixer.Sound('../assets/audio/hit.wav')
         self.attack_sound = pygame.mixer.Sound(monster_info['attack_sound'])
         self.death_sound.set_volume(0.2)
         self.hit_sound.set_volume(0.2)
