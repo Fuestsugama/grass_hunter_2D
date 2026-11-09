@@ -77,6 +77,9 @@ docs/         visual guide PDF and cover image
   The enemies (Snake3, Slime3, Flam, TRex, GoldRacoon, Mole, SpiderYellow) come from `Actor/Monster`
   and the boss TenguBlue from `Actor/Boss`: originals in `assets/actor/enemies/`,
   frames cut in `assets/graphics/monsters/`.
+- **Music and sound effects**: also from the
+  [Ninja Adventure Asset Pack](https://pixel-boy.itch.io/ninja-adventure-asset-pack) (CC0 1.0),
+  stored in `assets/audio/`.
 - **Code structure** inspired by the Zelda-style pygame tutorial by
   [Clear Code](https://www.youtube.com/@ClearCode).
 - **Map editor**: [Tiled](https://www.mapeditor.org/), map loading with [pytmx](https://github.com/bitcraft/pytmx).
