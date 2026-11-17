@@ -1,6 +1,6 @@
 # game setup
 WIDTH    = 1280 
-HEIGTH   = 720
+HEIGHT   = 720
 FPS      = 60
 TILESIZE = 64
 MAP_TILESIZE = 16 # tile size used in Tiled (world_map.tmx)
@@ -33,8 +33,8 @@ UI_BORDER_COLOR_ACTIVE = 'gold'
 
 # upgrade menu 
 TEXT_COLOR_SELECTED = '#111111'
-BAR_C0LOR = '#EEEEEE'
-BAR_C0LOR_SELECTED = '#111111'
+BAR_COLOR = '#EEEEEE'
+BAR_COLOR_SELECTED = '#111111'
 UPGRADE_BG_COLOR_SELECTED = '#EEEEEE'
 UPGRADE_STAT_FACTOR = 1.2   # each upgrade raises the stat by 20 %
 UPGRADE_COST_FACTOR = 1.4   # and makes the next upgrade 40 % more expensive

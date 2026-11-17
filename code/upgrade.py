@@ -7,7 +7,7 @@ class Upgrade:
         # general setups 
         self.display_surface = pygame.display.get_surface()
         self.player = player
-        self.attribute_nr = len(player.stats)
+        self.stat_count = len(player.stats)
         self.attribute_names = list(player.stats.keys())
         self.max_values = list(player.max_stats.values())
         self.font = pygame.font.Font(UI_FONT, UI_FONT_SIZE)
@@ -27,7 +27,7 @@ class Upgrade:
         keys = pygame.key.get_pressed()
 
         if self.can_move:
-            if keys [pygame.K_RIGHT] and self.selection_index < self.attribute_nr -1 :
+            if keys [pygame.K_RIGHT] and self.selection_index < self.stat_count -1 :
                 self.selection_index += 1 
                 self.can_move = False
                 self.selection_time = pygame.time.get_ticks()
@@ -49,10 +49,10 @@ class Upgrade:
     def create_items(self):
         self.items_list = []
 
-        for item, index in enumerate(range(self.attribute_nr)):
+        for item, index in enumerate(range(self.stat_count)):
             #horizontal (1280 )
             full_width = self.display_surface.get_size()[0]
-            increment  = full_width // self.attribute_nr 
+            increment  = full_width // self.stat_count 
             left = (item * increment) + (increment - self.width) // 2
 
             #vertical pos (720)
@@ -77,8 +77,9 @@ class Upgrade:
             item.display(self.display_surface, self.selection_index, name, value, max_value, cost)
 
 class Item:
-    def __init__(self,l,t,w,h,index, font):
-        self.rect = pygame.Rect(l,t,w,h)
+    """One card of the upgrade menu, for one stat."""
+    def __init__(self, left, top, width, height, index, font):
+        self.rect = pygame.Rect(left, top, width, height)
         self.index = index 
         self.font = font 
 
@@ -103,7 +104,7 @@ class Item:
         # drawing setup 
         top = self.rect.midtop + pygame.math.Vector2(0,60)
         bottom = self.rect.midbottom - pygame.math.Vector2(0,60)
-        color = BAR_C0LOR_SELECTED if selected else BAR_C0LOR
+        color = BAR_COLOR_SELECTED if selected else BAR_COLOR
 
         #bar setup 
         full_height = bottom[1] - top[1]
