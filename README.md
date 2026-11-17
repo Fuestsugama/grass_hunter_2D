@@ -54,7 +54,7 @@ assets/
   actor/      original sprite sheets (Hunter character, enemies)
   animated/, vehicles/   extra Tiled tilesets from the asset pack
 code/         game source (main.py is the entry point)
-maps/         world_map.tmx (Tiled map read by the game) and old CSV exports
+maps/         world_map.tmx (Tiled map read by the game)
 docs/         visual guide PDF and cover image
 ```
 

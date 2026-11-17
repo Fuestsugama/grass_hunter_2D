@@ -3,8 +3,7 @@ from pytmx.util_pygame import load_pygame
 from settings import *
 from tile import Tile
 from player import Player
-from support import *
-from random import choice, randint
+from random import randint
 from weapon import Weapon 
 from ui import UI
 from enemy import Enemy

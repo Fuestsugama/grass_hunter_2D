@@ -1,23 +1,17 @@
-from csv import reader
-from os import walk 
-import os
-import pygame 
+from os import walk
+import pygame
 
-# folder of this file, so '../maps/...' works no matter where it is launched from
-CODE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-def import_csv_layout(path):
-    terrain_map = []
-    with open(os.path.join(CODE_DIR, path)) as level_map:
-        layout = reader(level_map, delimiter = ',')
-        for row in layout:
-            terrain_map.append(list(row))
-        return terrain_map
+def frame_number(file_name):
+    # '10.png' -> 10, so frames play in order 0,1,2...10 and not 0,1,10,2...
+    stem = file_name.split('.')[0]
+    return (int(stem) if stem.isdigit() else float('inf'), file_name)
 
 def import_folder(path):
     surface_list = []
     for _,__,img_files in walk(path):
-        for image in img_files:
+        for image in sorted(img_files, key = frame_number):
+            if not image.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                continue    # skips stray files such as Thumbs.db or desktop.ini
             full_path = path + '/' + image
             image_surf = pygame.image.load(full_path).convert_alpha()
             surface_list.append(image_surf)
