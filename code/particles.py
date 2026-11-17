@@ -29,18 +29,14 @@ class AnimationPlayer:
             'squid_ink': import_folder('../assets/graphics/particles/squid_ink'),
             'raccoon_dash': import_folder('../assets/graphics/particles/raccoon_dash'),
             'spirit_explosion': import_folder('../assets/graphics/particles/spirit_explosion'),
-            'slime3': import_folder('../assets/graphics/particles/squid_ink'),
-            'flam': import_folder('../assets/graphics/particles/spirit_explosion'),
-            'gold_racoon': import_folder('../assets/graphics/particles/raccoon_dash'),
-            'trex': import_folder('../assets/graphics/particles/raccoon_dash'),
-            'spider_yellow': import_folder('../assets/graphics/particles/squid_ink'),
-            'mole': import_folder('../assets/graphics/particles/dig'),
-            'snake3': import_folder('../assets/graphics/particles/raccoon_dash'),
-            'tengu_blue': import_folder('../assets/graphics/particles/spirit_explosion'),
 
             # leaves: the 6 animations, plus the same 6 mirrored
             'leaf': tuple(leaf_frames + [self.reflect_images(frames) for frames in leaf_frames]),
         }
+
+        # each monster's death effect (set in monster_data) reuses frames already loaded above
+        for monster, monster_info in monster_data.items():
+            self.frames[monster] = self.frames[monster_info['death_effect']]
 
     def reflect_images(self, frames):
         new_frames = []

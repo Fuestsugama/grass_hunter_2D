@@ -143,13 +143,16 @@ class Level:
             # spawn particles 
             self.animation_player.create_particles(attack_type,self.player.rect.center,[self.visible_sprites])
 
-            # death mechanism 
-            if self.player.health <=0 :
+            if self.player.health <= 0:
                 self.player.health = 0  # to be sure that health never goes to negative values
-                self.game_over = True
-                pygame.mixer.stop()                     # stops the main music (and every other sound)
-                self.game_over_sound.play()             # the jingle
-                self.game_over_music.play(loops = -1)   # sad music that loops on the game over screen
+                self.trigger_game_over()
+
+    def trigger_game_over(self):
+        """Freeze the game on the game over screen and switch to its music."""
+        self.game_over = True
+        pygame.mixer.stop()                     # stops the main music (and every other sound)
+        self.game_over_sound.play()             # the jingle
+        self.game_over_music.play(loops = -1)   # sad music that loops on the game over screen
 
 
             
