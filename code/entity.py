@@ -43,3 +43,10 @@ class Entity(pygame.sprite.Sprite):
             return 255
         else:
             return 0
+
+    def flicker(self):
+        """Blink while invulnerable after a hit, fully visible otherwise."""
+        if not self.vulnerable:
+            self.image.set_alpha(self.wave_value())
+        else:
+            self.image.set_alpha(255)

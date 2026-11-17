@@ -6,6 +6,9 @@ from settings import monster_data, ANIMATION_SPEED
 
 class AnimationPlayer:
     def __init__(self):
+        """Load every particle animation once."""
+        leaf_frames = [import_folder(f'../assets/graphics/particles/leaf{number}') for number in range(1, 7)]
+
         self.frames = {
             # magic
             'flame': import_folder('../assets/graphics/particles/flame/frames'),
@@ -35,22 +38,8 @@ class AnimationPlayer:
             'snake3': import_folder('../assets/graphics/particles/raccoon_dash'),
             'tengu_blue': import_folder('../assets/graphics/particles/spirit_explosion'),
 
-            # leafs
-            'leaf': (
-                import_folder('../assets/graphics/particles/leaf1'),
-                import_folder('../assets/graphics/particles/leaf2'),
-                import_folder('../assets/graphics/particles/leaf3'),
-                import_folder('../assets/graphics/particles/leaf4'),
-                import_folder('../assets/graphics/particles/leaf5'),
-                import_folder('../assets/graphics/particles/leaf6'),
-                self.reflect_images(import_folder('../assets/graphics/particles/leaf1')),
-                self.reflect_images(import_folder('../assets/graphics/particles/leaf2')),
-                self.reflect_images(import_folder('../assets/graphics/particles/leaf3')),
-                self.reflect_images(import_folder('../assets/graphics/particles/leaf4')),
-                self.reflect_images(import_folder('../assets/graphics/particles/leaf5')),
-                self.reflect_images(import_folder('../assets/graphics/particles/leaf6'))
-                
-            )
+            # leaves: the 6 animations, plus the same 6 mirrored
+            'leaf': tuple(leaf_frames + [self.reflect_images(frames) for frames in leaf_frames]),
         }
 
     def reflect_images(self, frames):
