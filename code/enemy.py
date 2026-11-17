@@ -36,7 +36,7 @@ class Enemy(Entity):
         # Player interaction
         self.can_attack = True
         self.attack_time = None
-        self.attack_cooldown = 400
+        self.attack_cooldown = ENEMY_ATTACK_COOLDOWN
         self.damage_player = damage_player
         self.trigger_death_particles = trigger_death_particles
         self.add_exp = add_exp
@@ -44,7 +44,7 @@ class Enemy(Entity):
         # invisibility timer
         self.vulnerable = True
         self.hit_time = None
-        self.invulnerability_duration = 300
+        self.invulnerability_duration = ENEMY_INVULNERABILITY
 
         # sounds (shared between all enemies)
         self.death_sound = load_sound('../assets/audio/death.ogg', 0.2)

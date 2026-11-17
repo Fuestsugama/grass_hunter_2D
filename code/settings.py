@@ -41,6 +41,22 @@ UPGRADE_COST_FACTOR = 1.4   # and makes the next upgrade 40 % more expensive
 
 # player
 PLAYER_START_EXP = 5000   # high on purpose for the demo, to show the upgrade menu
+PLAYER_START_POS = (2050, 1500)   # spawn point on the map, in pixels
+PLAYER_STATS = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 5}
+PLAYER_MAX_STATS = {'health': 300, 'energy': 140, 'attack': 20, 'magic': 10, 'speed': 10}
+PLAYER_UPGRADE_COST = {'health': 100, 'energy': 100, 'attack': 100, 'magic': 100, 'speed': 100}
+ENERGY_RECOVERY_RATE = 0.02   # energy per frame, per point of magic
+
+# durations in milliseconds
+PLAYER_ATTACK_COOLDOWN = 400      # extra time added to the weapon's own cooldown
+SWITCH_COOLDOWN = 200             # between two weapon / spell switches
+PLAYER_INVULNERABILITY = 500      # after being hit
+ENEMY_ATTACK_COOLDOWN = 400
+ENEMY_INVULNERABILITY = 300
+MENU_INPUT_COOLDOWN = 300         # between two key presses in the upgrade menu
+
+# animation
+ANIMATION_SPEED = 0.15   # frames advanced per game frame
 
 
 

@@ -18,7 +18,7 @@ class Player(Entity):
 
         # movement 
         self.attacking = False
-        self.attack_cooldown = 400
+        self.attack_cooldown = PLAYER_ATTACK_COOLDOWN
         self.attack_time = None 
         self.obstacle_sprites = obstacle_sprites
 
@@ -29,7 +29,7 @@ class Player(Entity):
         self.weapon = list(weapon_data.keys())[self.weapon_index]
         self.can_switch_weapon = True
         self.weapon_switch_time = None
-        self.switch_duration_cooldown = 200
+        self.switch_duration_cooldown = SWITCH_COOLDOWN
 
         # magic 
         self.create_magic = create_magic
@@ -37,12 +37,12 @@ class Player(Entity):
         self.magic = list(magic_data.keys())[self.magic_index]
         self.can_switch_magic = True
         self.magic_switch_time = None
-        self.switch_duration_cooldown = 200
+        self.switch_duration_cooldown = SWITCH_COOLDOWN
 
         # stats
-        self.stats = {'health': 100, 'energy': 60, 'attack': 10, 'magic': 4, 'speed': 5}
-        self.max_stats = {'health': 300, 'energy': 140, 'attack': 20, 'magic': 10, 'speed': 10}
-        self.upgrade_cost = {'health': 100, 'energy': 100, 'attack': 100, 'magic': 100, 'speed': 100}
+        self.stats = dict(PLAYER_STATS)            # a copy: upgrades must not change the settings
+        self.max_stats = PLAYER_MAX_STATS
+        self.upgrade_cost = dict(PLAYER_UPGRADE_COST)
         self.health = self.stats['health']
         self.energy = self.stats['energy']
         self.exp = PLAYER_START_EXP
@@ -51,7 +51,7 @@ class Player(Entity):
         # damage timer
         self.vulnerable = True
         self.hurt_time = None
-        self.invulnerability_duration = 500
+        self.invulnerability_duration = PLAYER_INVULNERABILITY
 
         # import sounds 
         self.weapon_attack_sound = load_sound('../assets/audio/sword.ogg', 0.4)
@@ -201,7 +201,7 @@ class Player(Entity):
 
     def energy_recovery(self):
         if self.energy < self.stats['energy']:
-            self.energy += 0.02 * self.stats['magic']
+            self.energy += ENERGY_RECOVERY_RATE * self.stats['magic']
         else:
             self.energy = self.stats['energy']
 

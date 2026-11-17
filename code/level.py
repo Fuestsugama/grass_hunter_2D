@@ -97,7 +97,7 @@ class Level:
         self.visible_sprites.floor_rect = floor_surf.get_rect(topleft = (0,0))
 
         self.player = Player(
-            (2050,1500), 
+            PLAYER_START_POS,
             [self.visible_sprites], 
             self.obstacle_sprites, 
             self.create_attack, 

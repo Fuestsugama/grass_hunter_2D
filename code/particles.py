@@ -1,6 +1,7 @@
 import pygame 
 from support import import_folder
 from random import choice
+from settings import monster_data, ANIMATION_SPEED
 
 
 class AnimationPlayer:
@@ -73,7 +74,7 @@ class ParticleEffect(pygame.sprite.Sprite):
         super().__init__(groups)
         self.sprite_type = 'magic'
         self.frame_index = 0
-        self.animation_speed = 0.15
+        self.animation_speed = ANIMATION_SPEED
         self.frames = animation_frames
         self.image = self.frames[self.frame_index]
         self.rect = self.image.get_rect(center = pos)
