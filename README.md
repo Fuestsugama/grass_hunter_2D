@@ -64,6 +64,22 @@ maps/         world_map.tmx (Tiled map read by the game)
 docs/         visual guide PDF and cover image
 ```
 
+## Design choices (Clean Code)
+**DRY: write it once**
+- `Entity` (entity.py) holds what the player and the enemies share: movement with collisions,
+  animation speed and the blinking after a hit (`flicker`). Both classes inherit it.
+- `sound.py` loads each sound once and shares it: the 39 enemies use the same 5 sound objects.
+- particles.py loads the 6 leaf animations with one loop, and each monster's death effect
+  reuses frames that are already loaded.
+
+**SRP: one job per module and per method**
+- One module per job: `level.py` runs the world, `player.py` / `enemy.py` the characters,
+  `ui.py` the on-screen display, `upgrade.py` the menu, `sound.py` sounds, `support.py` images,
+  `settings.py` every value that can be tuned.
+- `Level.damage_player` only hurts the player; the game over sequence is in `Level.trigger_game_over`.
+- Game data lives in `settings.py`: adding a monster means one entry in `monster_data`
+  (stats, attack sound, death effect), with no other code to change.
+
 ## Credits
 - **Graphics**: [Ninja Adventure Asset Pack](https://pixel-boy.itch.io/ninja-adventure-asset-pack)
   by **Pixel-boy** and **AAA**, released under the
