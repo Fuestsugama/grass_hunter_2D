@@ -110,13 +110,11 @@ class Enemy(Entity):
 
     def cooldowns(self):
         current_time = pygame.time.get_ticks()
-        if not self.can_attack:
-            if current_time - self.attack_time >= self.attack_cooldown:
-                self.can_attack = True
+        if not self.can_attack and current_time - self.attack_time >= self.attack_cooldown:
+            self.can_attack = True
 
-        if not self.vulnerable:
-            if current_time - self.hit_time >= self.invulnerability_duration:
-                self.vulnerable = True
+        if not self.vulnerable and current_time - self.hit_time >= self.invulnerability_duration:
+            self.vulnerable = True
 
     def hit_reaction(self):
         if not self.vulnerable: # enemy is hit and not invulnerable, it will be pushed back

@@ -61,36 +61,33 @@ class Level:
         for style, layer_names in layouts.items():
             for layer_name in layer_names:
                 for col_index, row_index, gid in tmx_data.get_layer_by_name(layer_name):
-                    if gid:
-                        x = col_index * TILESIZE
-                        y = row_index * TILESIZE
-                        surf = pygame.transform.scale_by(tmx_data.get_tile_image_by_gid(gid), TILESIZE // MAP_TILESIZE)
-                        properties = tmx_data.get_tile_properties_by_gid(gid) or {}
+                    if not gid:
+                        continue    # empty cell in this layer
+                    x = col_index * TILESIZE
+                    y = row_index * TILESIZE
+                    surf = pygame.transform.scale_by(tmx_data.get_tile_image_by_gid(gid), TILESIZE // MAP_TILESIZE)
+                    properties = tmx_data.get_tile_properties_by_gid(gid) or {}
 
-                        if style == 'floor':
-                            floor_surf.blit(surf, (x,y))
-
-                        if style == 'boundary':
-                            Tile((x,y), [self.obstacle_sprites], 'invisible')
-
-                        if style == 'grass':
-                            Tile((x,y), [self.visible_sprites, self.obstacle_sprites, self.attackable_sprites], 'grass', surf)
-
-                        if style == 'object':   # solid unless "walkable = true" in Tiled
-                            if properties.get('walkable'):
-                                Tile((x,y), [self.visible_sprites], 'object', surf)
-                            else:
-                                Tile((x,y), [self.visible_sprites, self.obstacle_sprites], 'object', surf)
-
-                        if style == 'entities':
-                            Enemy(
-                                properties['monster'],
-                                (x,y),
-                                [self.visible_sprites, self.attackable_sprites],
-                                self.obstacle_sprites,
-                                self.damage_player,
-                                self.trigger_death_particles,
-                                self.add_exp)
+                    if style == 'floor':
+                        floor_surf.blit(surf, (x,y))
+                    elif style == 'boundary':
+                        Tile((x,y), [self.obstacle_sprites], 'invisible')
+                    elif style == 'grass':
+                        Tile((x,y), [self.visible_sprites, self.obstacle_sprites, self.attackable_sprites], 'grass', surf)
+                    elif style == 'object':   # solid unless "walkable = true" in Tiled
+                        if properties.get('walkable'):
+                            Tile((x,y), [self.visible_sprites], 'object', surf)
+                        else:
+                            Tile((x,y), [self.visible_sprites, self.obstacle_sprites], 'object', surf)
+                    elif style == 'entities':
+                        Enemy(
+                            properties['monster'],
+                            (x,y),
+                            [self.visible_sprites, self.attackable_sprites],
+                            self.obstacle_sprites,
+                            self.damage_player,
+                            self.trigger_death_particles,
+                            self.add_exp)
 
 
         self.visible_sprites.floor_surf = floor_surf
@@ -120,19 +117,18 @@ class Level:
         self.current_attack = None
 
     def player_attack_logic(self):
-        if self.attack_sprites:
-            for attack_sprite in self.attack_sprites:
-                collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.attackable_sprites, False)
-                if collision_sprites:
-                    for target_sprite in collision_sprites:
-                        if target_sprite.sprite_type == 'grass':
-                            pos = target_sprite.rect.center
-                            offset = pygame.math.Vector2(0,75)
-                            for leaf in range(randint(3, 6)):
-                                self.animation_player.create_grass_particles(pos - offset,[self.visible_sprites])
-                            target_sprite.kill()
-                        else:
-                            target_sprite.get_damage(self.player, attack_sprite.sprite_type)
+        """Check what the player's weapon and spells touch: cut grass (with leaves) or damage enemies."""
+        for attack_sprite in self.attack_sprites:
+            collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.attackable_sprites, False)
+            for target_sprite in collision_sprites:
+                if target_sprite.sprite_type == 'grass':
+                    pos = target_sprite.rect.center
+                    offset = pygame.math.Vector2(0,75)
+                    for _ in range(randint(3, 6)):
+                        self.animation_player.create_grass_particles(pos - offset,[self.visible_sprites])
+                    target_sprite.kill()
+                else:
+                    target_sprite.get_damage(self.player, attack_sprite.sprite_type)
 
     def damage_player(self, amount, attack_type):
         if self.player.vulnerable:

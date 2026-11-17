@@ -128,41 +128,46 @@ class Player(Entity):
                 self.magic = list(magic_data.keys())[self.magic_index]
                              
     def get_status(self):
-        # Idle status 
+        """Update the animation state, e.g. 'down' becomes 'down_idle' when still or 'down_attack' while attacking."""
+        # The status is the facing direction ('up', 'down', 'left', 'right'),
+        # optionally followed by '_idle' or '_attack'. It picks the animation folder to play.
+
+        # 1. Not moving: add '_idle' once ('down' -> 'down_idle'),
+        #    unless the player is already idle or in the middle of an attack.
         if self.direction.x == 0 and self.direction.y == 0:
             if not 'idle' in self.status and not 'attack' in self.status:
-                self.status = self.status + '_idle' 
+                self.status = self.status + '_idle'
 
+        # 2. Attacking: freeze the player and switch to the attack animation.
         if self.attacking:
             self.direction.x = 0
             self.direction.y = 0
             if not 'attack' in self.status:
                 if 'idle' in self.status:
-                    self.status = self.status.replace('_idle', '_attack')# overwrite idle 
-                else: 
-                    self.status = self.status + '_attack'
+                    self.status = self.status.replace('_idle', '_attack')   # 'down_idle' -> 'down_attack'
+                else:
+                    self.status = self.status + '_attack'                   # 'down' -> 'down_attack'
+
+        # 3. Attack finished: remove '_attack' to go back to the plain direction
+        #    ('down_attack' -> 'down'); step 1 turns it into 'down_idle' on the next frame if still.
         else:
             if 'attack' in self.status:
                 self.status = self.status.replace('_attack','')
 
     def cooldowns(self):
         current_time = pygame.time.get_ticks()
-        if self.attacking:
-            if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
-                self.attacking = False
-                self.destroy_attack()
+        if self.attacking and current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
+            self.attacking = False
+            self.destroy_attack()
 
-        if not self.can_switch_weapon:
-            if current_time - self.weapon_switch_time >= self.switch_duration_cooldown:
-                self.can_switch_weapon = True
+        if not self.can_switch_weapon and current_time - self.weapon_switch_time >= self.switch_duration_cooldown:
+            self.can_switch_weapon = True
 
-        if not self.can_switch_magic:
-            if current_time - self.magic_switch_time >= self.switch_duration_cooldown :
-                self.can_switch_magic = True
+        if not self.can_switch_magic and current_time - self.magic_switch_time >= self.switch_duration_cooldown:
+            self.can_switch_magic = True
 
-        if not self.vulnerable:
-            if current_time - self.hurt_time >= self.invulnerability_duration:
-                self.vulnerable = True
+        if not self.vulnerable and current_time - self.hurt_time >= self.invulnerability_duration:
+            self.vulnerable = True
 
     def animate(self):
         animation = self.animation[self.status]
