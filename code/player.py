@@ -58,6 +58,7 @@ class Player(Entity):
     
 
     def import_player_assets(self):
+        """Load the animation frames for every direction and state (walk, idle, attack)."""
         character_path = '../assets/graphics/player/'
         self.animation = {'up': [], 'down': [],'left': [],'right': [],
                           'right_idle': [],'left_idle': [],'up_idle': [],'down_idle': [],
@@ -68,6 +69,7 @@ class Player(Entity):
             self.animation[animation] = import_folder(full_path) 
 
     def input(self):
+        """Read the keyboard: movement, weapon attack, spell, and switching weapon or spell. Ignored while attacking."""
         if not self.attacking:
             keys = pygame.key.get_pressed()
 
@@ -155,6 +157,7 @@ class Player(Entity):
                 self.status = self.status.replace('_attack','')
 
     def cooldowns(self):
+        """End the timers that have run out: attack, weapon and spell switch, invulnerability after a hit."""
         current_time = pygame.time.get_ticks()
         if self.attacking and current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']:
             self.attacking = False
@@ -170,6 +173,7 @@ class Player(Entity):
             self.vulnerable = True
 
     def animate(self):
+        """Show the next frame of the current animation, flickering while invulnerable."""
         animation = self.animation[self.status]
 
         # loop over the frame index 
@@ -184,22 +188,27 @@ class Player(Entity):
         self.flicker()
             
     def get_full_weapon_damage(self):
+        """Damage of a weapon hit: attack stat + weapon damage."""
         base_damage = self.stats['attack']
         weapon_damage =  weapon_data[self.weapon]['damage']
         return base_damage + weapon_damage
     
     def get_full_magic_damage(self):
+        """Damage of a spell hit: magic stat + spell strength."""
         base_damage = self.stats['magic']
         spell_damage =  magic_data[self.magic]['strength']
         return base_damage + spell_damage
 
     def get_value_by_index(self, index):
+        """Return the value of the stat shown at this position in the upgrade menu."""
         return list(self.stats.values())[index]
     
     def get_cost_by_index(self, index):
+        """Return the upgrade cost of the stat shown at this position in the upgrade menu."""
         return list(self.upgrade_cost.values())[index]
 
     def energy_recovery(self):
+        """Refill energy a little every frame (faster with a higher magic stat), up to the max."""
         if self.energy < self.stats['energy']:
             self.energy += ENERGY_RECOVERY_RATE * self.stats['magic']
         else:

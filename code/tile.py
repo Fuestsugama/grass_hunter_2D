@@ -2,6 +2,7 @@ import pygame
 from settings import *
 
 class Tile(pygame.sprite.Sprite):
+    """A static map tile (grass, object or invisible wall) with a hitbox for collisions."""
     def __init__(self,pos, groups,sprite_type, surface =pygame.Surface((TILESIZE, TILESIZE))):
         super().__init__(groups)
         self.sprite_type = sprite_type

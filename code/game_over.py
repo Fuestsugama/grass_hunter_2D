@@ -2,6 +2,7 @@ import pygame
 from settings import *
 
 class GameOver:
+    """The game over screen drawn over the frozen game."""
 
     def __init__(self):
         self.display_surface = pygame.display.get_surface()

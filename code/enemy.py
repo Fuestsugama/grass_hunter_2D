@@ -5,6 +5,7 @@ from support import import_folder
 from sound import load_sound
 
 class Enemy(Entity):
+    """A monster from the Tiled map: notices the player, chases, attacks, takes damage and dies."""
     def __init__(self,monster_name,pos,groups,obstacle_sprites, damage_player, trigger_death_particles, add_exp):
 
         #general setup
@@ -52,6 +53,7 @@ class Enemy(Entity):
         self.attack_sound = load_sound(monster_info['attack_sound'], 0.25)
 
     def import_graphics(self,monster_name):
+        """Load the idle, move and attack frames of this monster."""
         self.animations = {'idle': [], 'move': [], 'attack': []}
 
         main_path = f'../assets/graphics/monsters/{monster_name}/'
@@ -59,6 +61,7 @@ class Enemy(Entity):
             self.animations[animation] = import_folder(main_path + animation)
 
     def get_player_distance_direction(self,player):
+        """Return the distance to the player and the unit vector pointing at them (zero vector at distance 0)."""
         enemy_vec = pygame.math.Vector2(self.rect.center)
         player_vec = pygame.math.Vector2(player.rect.center)
         distance = (player_vec - enemy_vec).magnitude()
@@ -71,6 +74,7 @@ class Enemy(Entity):
         return (distance,direction)
 
     def get_status(self, player):
+        """Choose the state from the distance: attack if close enough, move if the player is noticed, otherwise idle."""
         distance = self.get_player_distance_direction(player)[0]
 
         if distance <= self.attack_radius and self.can_attack:
@@ -83,6 +87,7 @@ class Enemy(Entity):
             self.status = 'idle'
 
     def actions(self,player):
+        """Act on the current state: hit the player, walk towards them, or stand still."""
         if self.status == 'attack':
             self.attack_time = pygame.time.get_ticks()
             self.damage_player(self.attack_damage, self.attack_type)
@@ -93,6 +98,7 @@ class Enemy(Entity):
             self.direction = pygame.math.Vector2() # if the player is not in the notice radius, the enemy will stop moving
 
     def animate(self):
+        """Show the next frame. One full attack animation counts as one attack. Flicker while invulnerable."""
         animation = self.animations[self.status]
 
         # loop over the frame index 
@@ -109,6 +115,7 @@ class Enemy(Entity):
         self.flicker()
 
     def cooldowns(self):
+        """Allow attacking again and end invulnerability once their timers run out."""
         current_time = pygame.time.get_ticks()
         if not self.can_attack and current_time - self.attack_time >= self.attack_cooldown:
             self.can_attack = True
@@ -117,10 +124,12 @@ class Enemy(Entity):
             self.vulnerable = True
 
     def hit_reaction(self):
+        """While invulnerable after a hit, move backwards (knock-back), scaled by the monster's resistance."""
         if not self.vulnerable: # enemy is hit and not invulnerable, it will be pushed back
             self.direction *= -self.resistance
 
     def get_damage(self,player, attack_type):
+        """Take a weapon or spell hit, then stay invulnerable for a short time."""
         if self.vulnerable:
             self.hit_sound.play()
             self.direction = self.get_player_distance_direction(player)[1] 
@@ -133,6 +142,7 @@ class Enemy(Entity):
             self.vulnerable = False
 
     def check_death(self):
+        """At 0 health: remove the enemy, play its death effect and sound, and give XP to the player."""
         if self.health <= 0:
             self.kill()
             self.trigger_death_particles(self.rect.center, self.monster_name)
@@ -147,6 +157,7 @@ class Enemy(Entity):
         self.check_death()
 
     def enemy_update(self,player):
+        """Per-frame logic that needs the player: choose a state, then act on it."""
         self.get_status(player)
         self.actions(player)
 

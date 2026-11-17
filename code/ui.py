@@ -2,6 +2,7 @@ import pygame
 from settings import *
 
 class UI:
+    """Draws the HUD: health and energy bars, XP, and the current weapon and spell."""
     def __init__(self):
 
         # general
@@ -27,6 +28,7 @@ class UI:
             self.magic_graphics.append(magic)
 
     def show_bar(self, current, max_amount, bg_rect, color):
+        """Draw a bar filled in proportion to current / max_amount."""
         # draw back-ground
         pygame.draw.rect(self.display_surface, UI_BG_COLOR, bg_rect)
 
@@ -51,6 +53,7 @@ class UI:
         pygame.draw.rect(self.display_surface, UI_BORDER_COLOR, text_rect.inflate(20,20), 3)
 
     def selection_box(self, left, top, has_switched):
+        """Draw an item box, with a gold border just after a switch."""
         bg_rect = pygame.Rect(left, top, ITEM_BOX_SIZE, ITEM_BOX_SIZE)
         pygame.draw.rect(self.display_surface, UI_BG_COLOR, bg_rect)
         if has_switched:

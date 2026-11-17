@@ -5,6 +5,7 @@ from settings import monster_data, ANIMATION_SPEED
 
 
 class AnimationPlayer:
+    """Loads every particle animation once and spawns effects on demand."""
     def __init__(self):
         """Load every particle animation once."""
         leaf_frames = [import_folder(f'../assets/graphics/particles/leaf{number}') for number in range(1, 7)]
@@ -39,6 +40,7 @@ class AnimationPlayer:
             self.frames[monster] = self.frames[monster_info['death_effect']]
 
     def reflect_images(self, frames):
+        """Return the frames mirrored horizontally (leaves falling the other way)."""
         new_frames = []
         for frame in frames:
             flipped_frame = pygame.transform.flip(frame, True, False)
@@ -46,15 +48,18 @@ class AnimationPlayer:
         return new_frames 
 
     def create_grass_particles(self, pos, groups):
+        """Spawn one random falling-leaf animation, used when grass is cut."""
         animation_frames = choice(self.frames['leaf'])
         ParticleEffect(pos, animation_frames, groups)
 
     def create_particles(self, animation_type, pos,groups):
+        """Spawn the animation of this type at a position (attacks, spells, deaths)."""
         animation_frames = self.frames[animation_type]
         ParticleEffect(pos, animation_frames, groups)
 
 
 class ParticleEffect(pygame.sprite.Sprite):
+    """A one-shot animation that removes itself after its last frame."""
     def __init__(self, pos, animation_frames, groups):
         super().__init__(groups)
         self.sprite_type = 'magic'

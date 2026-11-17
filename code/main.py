@@ -7,6 +7,7 @@ from level import Level
 from sound import load_sound
 
 class Game: 
+    """Creates the window, runs the main loop, and handles the quit, menu and restart keys."""
     def __init__(self):
 
         # general setup 

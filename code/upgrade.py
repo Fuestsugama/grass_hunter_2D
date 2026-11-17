@@ -2,6 +2,7 @@ import pygame
 from settings import *
 
 class Upgrade: 
+    """The upgrade menu (key M): choose a stat with the arrows and spend XP on it with Space."""
     def __init__(self, player):
 
         # general setups 
@@ -24,6 +25,7 @@ class Upgrade:
 
 
     def input (self):
+        """Left and right arrows move the selection; Space upgrades the selected stat."""
         keys = pygame.key.get_pressed()
 
         if self.can_move:
@@ -41,12 +43,14 @@ class Upgrade:
                 self.items_list[self.selection_index].trigger(self.player)
 
     def selection_cooldown(self):
+        """Allow input again a short time (MENU_INPUT_COOLDOWN) after the last key press, so one press moves one step."""
         if not self.can_move:
             current_time = pygame.time.get_ticks()
             if current_time - self.selection_time >= MENU_INPUT_COOLDOWN:
                 self.can_move = True 
 
     def create_items(self):
+        """Create one menu card per player stat, spread evenly across the screen."""
         self.items_list = []
 
         for item, index in enumerate(range(self.stat_count)):
@@ -100,6 +104,7 @@ class Item:
         surface.blit(cost_surf, cost_rect)
 
     def display_bar(self, surface, value, max_value, selected):
+        """Draw the stat's level as a marker on a vertical line."""
 
         # drawing setup 
         top = self.rect.midtop + pygame.math.Vector2(0,60)

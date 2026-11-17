@@ -3,6 +3,7 @@ import settings
 from math import sin
 
 class Entity(pygame.sprite.Sprite):
+    """Base class for everything that moves and collides: the player and the enemies."""
     def __init__(self, groups):
         super().__init__(groups)
         self.frame_index = 0
@@ -10,6 +11,7 @@ class Entity(pygame.sprite.Sprite):
         self.direction = pygame.math.Vector2()
 
     def move(self,speed):
+            """Move along the current direction, checking collisions one axis at a time."""
             if self.direction.magnitude() != 0:
                 self.direction = self.direction.normalize()
 
@@ -20,6 +22,7 @@ class Entity(pygame.sprite.Sprite):
             self.rect.center = self.hitbox.center
 
     def collision(self, direction):
+        """Push the hitbox out of any obstacle it overlaps on one axis ('horizontal' or 'vertical')."""
 
         if direction == 'horizontal':
             for sprite in self.obstacle_sprites:
@@ -38,6 +41,7 @@ class Entity(pygame.sprite.Sprite):
                         self.hitbox.top = sprite.hitbox.bottom
 
     def wave_value(self):
+        """Return 255 or 0 alternately over time, used to make a hit sprite flicker."""
         value = sin(pygame.time.get_ticks())
         if value >= 0:
             return 255

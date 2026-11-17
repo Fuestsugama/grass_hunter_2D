@@ -14,6 +14,7 @@ from game_over import GameOver
 from sound import load_sound
 
 class Level:
+    """The game world: builds the map from Tiled, runs every sprite, and handles combat, XP, pause and game over."""
     def __init__(self):
 
         # get the display surface 
@@ -47,6 +48,7 @@ class Level:
         self.magic_player = MagicPlayer(self.animation_player)
 
     def create_map (self):
+        """Build the world from the Tiled map: floor image, walls, grass, objects, enemies, then the player."""
         tmx_data = load_pygame('../maps/world_map.tmx')
         floor_surf = pygame.Surface((tmx_data.width * TILESIZE, tmx_data.height * TILESIZE))
 
@@ -102,9 +104,11 @@ class Level:
             self.create_magic)
 
     def create_attack (self):
+        """Show the player's current weapon in their hand."""
         self.current_attack = Weapon(self.player,[self.visible_sprites, self.attack_sprites])
 
     def create_magic(self, style, strength, cost):
+        """Cast the selected spell ('heal' or 'flame') for the player."""
         if style == 'heal':
             self.magic_player.heal(self.player, strength, cost, [self.visible_sprites])
 
@@ -112,6 +116,7 @@ class Level:
             self.magic_player.flame(self.player, strength, cost, [self.visible_sprites, self.attack_sprites])
 
     def destroy_attack(self):
+        """Remove the weapon from the player's hand when the attack ends."""
         if self.current_attack:
             self.current_attack.kill()
         self.current_attack = None
@@ -131,6 +136,7 @@ class Level:
                     target_sprite.get_damage(self.player, attack_sprite.sprite_type)
 
     def damage_player(self, amount, attack_type):
+        """Hurt the player at most once per invulnerability window. At 0 health, switch to game over."""
         if self.player.vulnerable:
             self.player.health -= amount
             self.player.vulnerable = False
@@ -163,6 +169,7 @@ class Level:
         self.game_paused = not self.game_paused
 
     def run(self):
+        """Draw the frame, then update the game unless it is paused or over."""
         self.visible_sprites.custom_draw(self.player)
         self.ui.display(self.player)
 
@@ -177,6 +184,7 @@ class Level:
     
        
 class YsortCameraGroup(pygame.sprite.Group):
+    """Sprite group with a camera that follows the player and draws lower sprites in front (depth)."""
 
     def __init__(self):
         # general setup 
@@ -189,6 +197,7 @@ class YsortCameraGroup(pygame.sprite.Group):
         # the floor (floor_surf / floor_rect) is built from the Tiled map in Level.create_map
 
     def custom_draw(self, player):
+        """Draw the floor, then every sprite sorted by its y position, offset so the player stays centred."""
 
         # getting the offset 
         self.offset.x = player.rect.centerx - self.half_width
@@ -204,6 +213,7 @@ class YsortCameraGroup(pygame.sprite.Group):
             self.display_surface.blit(sprite.image, offset_pos)
 
     def enemy_update(self, player):
+        """Run the per-frame logic of every enemy that needs the player."""
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite, 'sprite_type') and sprite.sprite_type == 'enemy']
         for enemy in enemy_sprites:
             enemy.enemy_update(player)

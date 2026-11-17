@@ -4,6 +4,7 @@ from random import randint
 from sound import load_sound
 
 class MagicPlayer:
+    """Applies the spells: their energy cost, their effect and their particles."""
     def __init__ (self, animation_player):
         self.animation_player = animation_player
         self.sounds = {
@@ -12,6 +13,7 @@ class MagicPlayer:
         }
 
     def heal(self, player, strength, cost, groups):
+        """Restore health without passing the max, if the player has enough energy."""
 
         if player.energy >= cost:
             self.sounds['heal'].play()
@@ -23,6 +25,7 @@ class MagicPlayer:
             self.animation_player.create_particles('heal', player.rect.center, groups)
 
     def flame(self, player, strength, cost, groups):
+        """Send five bursts of fire in the direction the player faces, if the player has enough energy."""
         if player.energy >= cost:
             player.energy -= cost 
             self.sounds['flame'].play()

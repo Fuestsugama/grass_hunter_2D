@@ -1,6 +1,7 @@
 import pygame 
 
 class Weapon(pygame.sprite.Sprite):
+    """The weapon drawn in the player's hand during an attack, placed according to the facing direction."""
     def __init__(self, player, groups):
         super().__init__(groups)
         self.sprite_type = 'weapon'

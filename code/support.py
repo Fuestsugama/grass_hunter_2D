@@ -7,6 +7,7 @@ def frame_number(file_name):
     return (int(stem) if stem.isdigit() else float('inf'), file_name)
 
 def import_folder(path):
+    """Load every image of a folder in frame order (0, 1, 2 ... 10), skipping files that are not images."""
     surface_list = []
     for _,__,img_files in walk(path):
         for image in sorted(img_files, key = frame_number):
