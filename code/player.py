@@ -5,7 +5,8 @@ from entity import Entity
 from sound import load_sound
 
 class Player(Entity):
-    def __init__(self,pos, groups, obstacle_sprites, create_attack, destroy_attack, create_magic, add_exp):
+    """The hero: reads the keyboard, moves, attacks, casts spells and holds the stats that can be upgraded."""
+    def __init__(self, pos, groups, obstacle_sprites, create_attack, destroy_attack, create_magic):
         super().__init__(groups)
         self.image = pygame.image.load('../assets/graphics/player/down_idle/0.png').convert_alpha()
         self.rect = self.image.get_rect(topleft = pos)
@@ -44,7 +45,7 @@ class Player(Entity):
         self.upgrade_cost = {'health': 100, 'energy': 100, 'attack': 100, 'magic': 100, 'speed': 100}
         self.health = self.stats['health']
         self.energy = self.stats['energy']
-        self.exp = 5000
+        self.exp = PLAYER_START_EXP
         self.speed = self.stats['speed']
 
         # damage timer

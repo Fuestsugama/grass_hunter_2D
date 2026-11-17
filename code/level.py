@@ -102,8 +102,7 @@ class Level:
             self.obstacle_sprites, 
             self.create_attack, 
             self.destroy_attack,
-            self.create_magic,
-            self.add_exp)
+            self.create_magic)
 
     def create_attack (self):
         self.current_attack = Weapon(self.player,[self.visible_sprites, self.attack_sprites])

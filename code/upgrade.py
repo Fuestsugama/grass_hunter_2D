@@ -114,16 +114,18 @@ class Item:
         pygame.draw.line(surface, color, top, bottom, 5)
         pygame.draw.rect(surface, color, value_rect)
 
-    def trigger (self, player):
-        upgrade_attribute = list(player.stats.keys())[self.index]
+    def trigger(self, player):
+        """Spend XP to raise the selected stat, never above its maximum."""
+        stat_name = list(player.stats.keys())[self.index]
+        cost = player.upgrade_cost[stat_name]
+        max_value = player.max_stats[stat_name]
 
-        if player.exp >= player.upgrade_cost[upgrade_attribute] and  player.stats[upgrade_attribute] < player.max_stats[upgrade_attribute]:
-            player.exp -= player.upgrade_cost[upgrade_attribute]
-            player.stats[upgrade_attribute] *= 1.2
-            player.upgrade_cost[upgrade_attribute] *= 1.4
-
-        if player.stats[upgrade_attribute] > player.max_stats[upgrade_attribute]:
-            player.stats[upgrade_attribute] > player.max_stats[upgrade_attribute]
+        has_enough_exp = player.exp >= cost
+        is_below_max = player.stats[stat_name] < max_value
+        if has_enough_exp and is_below_max:
+            player.exp -= cost
+            player.stats[stat_name] = min(player.stats[stat_name] * UPGRADE_STAT_FACTOR, max_value)
+            player.upgrade_cost[stat_name] *= UPGRADE_COST_FACTOR
 
     def display(self, surface, selection_num, name, value, max_value, cost):
         if self.index == selection_num:

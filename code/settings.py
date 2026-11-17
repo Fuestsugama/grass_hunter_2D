@@ -36,6 +36,11 @@ TEXT_COLOR_SELECTED = '#111111'
 BAR_C0LOR = '#EEEEEE'
 BAR_C0LOR_SELECTED = '#111111'
 UPGRADE_BG_COLOR_SELECTED = '#EEEEEE'
+UPGRADE_STAT_FACTOR = 1.2   # each upgrade raises the stat by 20 %
+UPGRADE_COST_FACTOR = 1.4   # and makes the next upgrade 40 % more expensive
+
+# player
+PLAYER_START_EXP = 5000   # high on purpose for the demo, to show the upgrade menu
 
 
 
