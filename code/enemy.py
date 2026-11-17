@@ -1,7 +1,8 @@
 import pygame
 from settings import *
 from entity import Entity
-from support import *
+from support import import_folder
+from sound import load_sound
 
 class Enemy(Entity):
     def __init__(self,monster_name,pos,groups,obstacle_sprites, damage_player, trigger_death_particles, add_exp):
@@ -45,15 +46,10 @@ class Enemy(Entity):
         self.hit_time = None
         self.invulnerability_duration = 300
 
-        # sounds
-        self.death_sound = pygame.mixer.Sound('../assets/audio/death.wav')
-        self.hit_sound = pygame.mixer.Sound('../assets/audio/hit.wav')
-        self.attack_sound = pygame.mixer.Sound(monster_info['attack_sound'])
-        self.death_sound.set_volume(0.2)
-        self.hit_sound.set_volume(0.2)
-        self.attack_sound.set_volume(0.25)
-
-
+        # sounds (shared between all enemies)
+        self.death_sound = load_sound('../assets/audio/death.ogg', 0.2)
+        self.hit_sound = load_sound('../assets/audio/hit.ogg', 0.2)
+        self.attack_sound = load_sound(monster_info['attack_sound'], 0.25)
 
     def import_graphics(self,monster_name):
         self.animations = {'idle': [], 'move': [], 'attack': []}

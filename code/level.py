@@ -11,6 +11,7 @@ from particles import AnimationPlayer
 from magic import MagicPlayer 
 from upgrade import Upgrade
 from game_over import GameOver
+from sound import load_sound
 
 class Level:
     def __init__(self):
@@ -38,10 +39,8 @@ class Level:
         self.game_over_screen = GameOver()
 
         # sounds
-        self.game_over_sound = pygame.mixer.Sound('../assets/audio/game_over.wav')
-        self.game_over_sound.set_volume(0.5)
-        self.game_over_music = pygame.mixer.Sound('../assets/audio/game_over.ogg')
-        self.game_over_music.set_volume(0.4)
+        self.game_over_sound = load_sound('../assets/audio/game_over_jingle.ogg', 0.5)
+        self.game_over_music = load_sound('../assets/audio/game_over.ogg', 0.4)
 
         # particles
         self.animation_player = AnimationPlayer()

@@ -4,6 +4,7 @@ import pygame, sys, os
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 from settings import *
 from level import Level
+from sound import load_sound
 
 class Game: 
     def __init__(self):
@@ -17,8 +18,7 @@ class Game:
         self.level = Level()
 
         # sounds 
-        self.main_sound = pygame.mixer.Sound('../assets/audio/main.ogg')
-        self.main_sound.set_volume(0.5)
+        self.main_sound = load_sound('../assets/audio/main.ogg', 0.5)
         self.main_sound.play(loops = -1)
 
     def run(self):
