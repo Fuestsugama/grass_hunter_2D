@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 _unused/
 .vscode/
+.venv/
+build/
+release/

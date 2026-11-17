@@ -39,11 +39,17 @@ The world is designed in [Tiled](https://www.mapeditor.org/) and loaded with pyt
 | R | Restart after a game over |
 
 ## Run it
+Tested on Windows 11 with **Python 3.12 and 3.14**, pygame-ce 2.5.8 and pytmx 3.32
+(exact versions in `requirements.txt`).
+
 ```bash
+python -m venv .venv
+.venv\Scripts\activate          # macOS / Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python code/main.py
 ```
-`pygame-ce` also works instead of `pygame`.
+The virtual environment keeps these versions separate from other Python projects.
+Do not install `pygame` and `pygame-ce` together: both provide the `pygame` module and conflict.
 
 ## Project structure
 ```
