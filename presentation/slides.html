@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grass Hunter · Talk</title>
+<style>
+@font-face { font-family: 'GH'; src: url('assets/font/NormalFont.ttf') format('truetype'); font-display: block; }
+
+:root {
+  --bg: #14231a; --bg-deep: #0e1912; --panel: #1f3427; --panel-2: #263f30; --line: #2f4a39;
+  --grass: #9bc53d; --gold: #f2c14e; --red: #e2574c; --blue: #5aa0e6; --water: #71ddee; --purple: #b07ce8;
+  --txt: #eef2e6; --muted: #a9b8a6; --dim: #6f8270;
+  --sans: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --mono: Consolas, 'Cascadia Mono', 'Courier New', monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg-deep); color: var(--txt); font-family: var(--sans); overflow: hidden; }
+.px { font-family: 'GH', var(--sans); word-spacing: .32em; letter-spacing: .03em; text-transform: uppercase; }
+
+/* ---------- stage: a 1920 × 1080 canvas scaled to the window ---------- */
+#stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.slide { position: absolute; inset: 0; background: var(--bg); overflow: hidden; opacity: 0; visibility: hidden;
+         transition: opacity .55s var(--ease), visibility 0s linear .55s; padding: 72px 96px 96px; }
+.slide.active { opacity: 1; visibility: visible; transition: opacity .55s var(--ease), visibility 0s; z-index: 2; }
+.slide::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 85% -10%, rgba(155,197,61,.08), transparent 55%),
+              radial-gradient(ellipse at -10% 110%, rgba(113,221,238,.05), transparent 50%); }
+
+/* header, footer */
+.head { position: relative; padding-left: 34px; margin-bottom: 44px; }
+.head::before { content: ''; position: absolute; left: 0; top: 4px; width: 12px; height: 74px; background: var(--grass);
+  transform: scaleY(0); transform-origin: top; transition: transform .6s var(--ease) .1s; }
+.active .head::before { transform: scaleY(1); }
+.head h2 { font-family: 'GH'; font-size: 66px; line-height: 1; letter-spacing: .03em; word-spacing: .3em; text-transform: uppercase; font-weight: normal; }
+.head p { margin-top: 14px; font-size: 27px; color: var(--muted); }
+.brand { position: absolute; top: 80px; right: 96px; font-size: 20px; color: var(--muted); }
+.foot { position: absolute; left: 96px; right: 96px; bottom: 40px; display: flex; align-items: center; justify-content: space-between; font-size: 18px; color: var(--dim); z-index: 3; }
+.chip-sec { display: inline-flex; align-items: center; gap: 12px; padding: 8px 16px; border-radius: 99px; background: var(--panel); color: var(--muted); }
+.chip-sec b { color: var(--sec, var(--grass)); font-weight: normal; }
+.chip-sec i { width: 10px; height: 10px; border-radius: 50%; background: var(--sec, var(--grass)); }
+
+/* staggered entrance (motion) */
+[data-a] { opacity: 0; transform: translateY(26px); filter: blur(6px);
+  transition: opacity .7s var(--ease), transform .7s var(--ease), filter .7s var(--ease); transition-delay: calc(var(--i, 0) * 90ms + 150ms); }
+[data-a="left"] { transform: translateX(-40px); }
+[data-a="right"] { transform: translateX(40px); }
+[data-a="zoom"] { transform: scale(.94); }
+.active [data-a] { opacity: 1; transform: none; filter: none; }
+
+/* cards */
+.card { background: var(--panel); border-radius: 20px; padding: 30px 34px; position: relative; }
+.card h3 { font-family: 'GH'; font-weight: normal; font-size: 27px; letter-spacing: .04em; word-spacing: .3em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+.card p, .card li { font-size: 25px; line-height: 1.42; color: #d7e0d2; }
+.card ul { list-style: none; }
+.card li { padding-left: 26px; position: relative; margin: 7px 0; }
+.card li::before { content: ''; position: absolute; left: 0; top: .55em; width: 10px; height: 10px; background: var(--grass); }
+.muted { color: var(--muted); }
+code, .mono { font-family: var(--mono); }
+p code, li code, td code { background: rgba(255,255,255,.06); padding: 1px 8px; border-radius: 6px; font-size: .9em; color: var(--gold); }
+
+/* sprites: horizontal strips played with steps() */
+.spr { display: inline-block; flex: none; image-rendering: pixelated;
+  width: calc(var(--w) * var(--sc, 1) * 1px); height: calc(var(--h) * var(--sc, 1) * 1px);
+  background-repeat: no-repeat; background-size: calc(var(--w) * var(--n) * var(--sc, 1) * 1px) 100%;
+  animation: spr-play var(--dur, .6s) steps(var(--n)) infinite; }
+@keyframes spr-play { from { background-position-x: 0; } to { background-position-x: calc(var(--w) * var(--n) * var(--sc, 1) * -1px); } }
+img.pix { image-rendering: pixelated; }
+
+/* ---------- 1 · cover ---------- */
+.s-cover { padding: 0; }
+.s-cover .map { position: absolute; inset: -60px; background: url('assets/img/world_map.png') center / cover; image-rendering: pixelated;
+  animation: kenburns 38s ease-in-out infinite alternate; }
+@keyframes kenburns { from { transform: scale(1.05) translate(0, 0); } to { transform: scale(1.18) translate(-3%, -2%); } }
+.s-cover .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,25,18,.55) 0%, rgba(14,25,18,.05) 30%, rgba(14,25,18,.35) 58%, rgba(14,25,18,.97) 88%); }
+.s-cover .topbar { position: absolute; top: 0; left: 0; right: 0; height: 84px; background: rgba(20,35,26,.72); display: flex; align-items: center; justify-content: space-between; padding: 0 64px; font-size: 22px; color: #dfe7d6; }
+.s-cover .title { position: absolute; left: 96px; bottom: 210px; font-family: 'GH'; font-size: 196px; line-height: .9; color: var(--grass); letter-spacing: .04em; word-spacing: .25em;
+  text-shadow: 8px 8px 0 #1c2e12, 0 0 60px rgba(155,197,61,.25); }
+.s-cover .tag { position: absolute; left: 100px; bottom: 120px; font-size: 34px; color: #eef2e6; }
+.s-cover .course { position: absolute; left: 100px; bottom: 58px; font-size: 22px; color: var(--muted); }
+.s-cover .walker { position: absolute; bottom: 150px; left: 0; animation: walk-across 16s linear infinite; }
+@keyframes walk-across { from { transform: translateX(-200px); } to { transform: translateX(2100px); } }
+.s-cover .boss { position: absolute; right: 120px; bottom: 120px; animation: bob 2.4s ease-in-out infinite; filter: drop-shadow(0 18px 18px rgba(0,0,0,.5)); }
+@keyframes bob { 50% { transform: translateY(-14px); } }
+.leaf { position: absolute; top: -140px; animation: fall linear infinite; opacity: .9; }
+@keyframes fall { to { transform: translate(-260px, 1300px) rotate(200deg); } }
+
+/* ---------- 2 · talk plan ---------- */
+.plan { display: flex; gap: 18px; margin-top: 30px; }
+.plan .step { flex: var(--min); background: var(--panel); border-radius: 20px; padding: 32px 28px 30px; position: relative; overflow: hidden; min-height: 560px; }
+.plan .step .bar { position: absolute; left: 0; top: 0; height: 10px; width: 0; background: var(--c); transition: width 1s var(--ease); transition-delay: calc(var(--i) * 220ms + 400ms); }
+.active .plan .step .bar { width: 100%; }
+.plan .num { font-family: 'GH'; font-size: 92px; color: var(--c); line-height: 1; }
+.plan .num small { font-size: 30px; margin-left: 10px; text-transform: uppercase; }
+.plan h3 { font-family: 'GH'; font-weight: normal; font-size: 27px; margin: 18px 0 14px; text-transform: uppercase; word-spacing: .3em; }
+.plan p { font-size: 24px; color: var(--muted); line-height: 1.4; }
+.plan .sprite-slot { position: absolute; right: 18px; bottom: 16px; }
+.timeline { margin-top: 34px; height: 16px; border-radius: 9px; background: var(--panel); overflow: hidden; display: flex; }
+.timeline span { flex: var(--min); background: var(--c); transform: scaleX(0); transform-origin: left; transition: transform .9s var(--ease); transition-delay: calc(var(--i) * 220ms + 600ms); border-right: 3px solid var(--bg); }
+.active .timeline span { transform: scaleX(1); }
+.timeline-labels { display: flex; justify-content: space-between; color: var(--dim); font-size: 20px; margin-top: 10px; }
+
+/* ---------- 3 · need ---------- */
+.need { display: grid; grid-template-columns: 1fr 1.25fr; gap: 34px; }
+.need .big { font-size: 44px; line-height: 1.3; font-weight: 600; }
+.need .big em { color: var(--grass); font-style: normal; }
+.goals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.goal { background: var(--panel); border-radius: 20px; padding: 30px 32px; border-top: 6px solid var(--c); min-height: 330px; }
+.goal .k { font-family: 'GH'; color: var(--c); font-size: 25px; text-transform: uppercase; word-spacing: .3em; }
+.goal p { margin-top: 16px; font-size: 26px; line-height: 1.4; color: #d7e0d2; }
+.stack { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 30px; }
+.stack span { background: var(--panel-2); padding: 10px 18px; border-radius: 12px; font-size: 22px; color: var(--txt); }
+.stack span b { color: var(--gold); font-weight: 600; }
+
+/* ---------- 4 · world ---------- */
+.world { display: grid; grid-template-columns: 1176px 1fr; gap: 30px; }
+.mapbox { position: relative; border-radius: 22px; overflow: hidden; border: 8px solid var(--panel); height: 740px; }
+.mapbox img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; transform: scale(1.12); transition: transform 2.4s var(--ease); }
+.active .mapbox img { transform: scale(1); }
+.pin { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 0 var(--c); animation: pulse 2s infinite; transform: translate(-50%, -50%); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 70%, transparent); } 100% { box-shadow: 0 0 0 30px transparent; } }
+.pin span { position: absolute; left: 36px; top: -8px; white-space: nowrap; font-family: 'GH'; font-size: 22px; text-transform: uppercase; color: #fff; text-shadow: 2px 2px 0 #000, 0 0 10px #000; word-spacing: .3em; }
+.zones { display: flex; flex-direction: column; gap: 20px; }
+.zone { background: var(--panel); border-radius: 18px; padding: 22px 26px; border-left: 8px solid var(--c); }
+.zone h3 { font-family: 'GH'; font-weight: normal; color: var(--c); font-size: 27px; word-spacing: .3em; }
+.zone p { font-size: 21px; color: #d7e0d2; margin: 8px 0 10px; line-height: 1.35; }
+.zone .mons { display: flex; gap: 6px; align-items: flex-end; }
+.facts { display: flex; gap: 14px; margin-top: 4px; }
+.fact { flex: 1; background: var(--panel); border-radius: 16px; padding: 14px 16px; text-align: center; }
+.fact b { display: block; font-family: 'GH'; font-size: 40px; color: var(--gold); font-weight: normal; }
+.fact span { font-size: 17px; color: var(--muted); }
+
+/* ---------- 5 · architecture ---------- */
+.arch { display: grid; grid-template-columns: 1.25fr 1fr; gap: 34px; }
+.loop svg { width: 100%; height: 760px; }
+.flow-dot { offset-rotate: 0deg; animation: travel 6s linear infinite; }
+@keyframes travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.layers { display: flex; flex-direction: column; gap: 16px; }
+.layer { background: var(--panel); border-radius: 18px; padding: 20px 26px; display: grid; grid-template-columns: 210px 1fr; gap: 18px; align-items: center; border-left: 8px solid var(--c); }
+.layer .k { font-family: 'GH'; color: var(--c); font-size: 23px; word-spacing: .3em; text-transform: uppercase; }
+.layer p { font-size: 21px; line-height: 1.38; color: #d7e0d2; }
+.layer code { font-size: 19px; }
+
+/* ---------- 6 · UML ---------- */
+.s-uml { padding: 40px 50px 80px; }
+.s-uml .head { margin-bottom: 10px; }
+.s-uml .head h2 { font-size: 50px; }
+.s-uml .head p { font-size: 22px; margin-top: 8px; }
+.uml-wrap { position: absolute; left: 40px; right: 40px; top: 128px; bottom: 62px; }
+.uml-wrap svg { width: 100%; height: 100%; }
+.uml-wrap .uml-class { opacity: 0; transform: translateY(14px); transition: opacity .5s var(--ease), transform .5s var(--ease); transition-delay: calc(var(--i) * 70ms + 200ms); }
+.uml-wrap .uml-edge, .uml-wrap text:not(.uml-class text) { opacity: 0; transition: opacity .8s ease 1.5s; }
+.active .uml-wrap .uml-class, .active .uml-wrap .uml-edge, .active .uml-wrap text { opacity: 1; transform: none; }
+.uml-wrap .uml-legend { opacity: 0; transition: opacity .8s ease 1.8s; }
+.active .uml-wrap .uml-legend { opacity: 1; }
+
+/* ---------- 7 · design choices ---------- */
+.choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.choice { background: var(--panel); border-radius: 20px; padding: 26px 28px; display: flex; flex-direction: column; gap: 12px; border-top: 6px solid var(--c); }
+.choice .k { font-family: 'GH'; color: var(--c); font-size: 24px; word-spacing: .3em; text-transform: uppercase; }
+.choice p { font-size: 23px; line-height: 1.4; color: #d7e0d2; }
+.choice pre { font-family: var(--mono); font-size: 19.5px; line-height: 1.45; background: var(--bg-deep); border-radius: 12px; padding: 14px 16px; color: #d7e0d2; white-space: pre; overflow: hidden; margin-top: auto; }
+
+/* ---------- 8 · game divider ---------- */
+.s-divider { display: flex; flex-direction: column; justify-content: center; }
+.s-divider .eyebrow { font-family: 'GH'; color: var(--gold); font-size: 28px; word-spacing: .3em; text-transform: uppercase; }
+.s-divider h2 { font-family: 'GH'; font-weight: normal; font-size: 150px; line-height: 1; color: var(--grass); text-shadow: 7px 7px 0 #1c2e12; word-spacing: .25em; margin: 18px 0 30px; }
+.s-divider .lead { font-size: 32px; color: #d7e0d2; max-width: 1050px; line-height: 1.4; }
+.cycle { position: absolute; right: 150px; top: 50%; width: 620px; height: 620px; transform: translateY(-50%); }
+.cycle .ring { position: absolute; inset: 60px; border: 4px dashed var(--line); border-radius: 50%; animation: spin 40s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cycle .node { position: absolute; width: 190px; transform: translate(-50%, -50%); text-align: center; }
+.cycle .node .ic { height: 110px; display: flex; align-items: flex-end; justify-content: center; }
+.cycle .node b { display: block; font-family: 'GH'; font-weight: normal; font-size: 22px; margin-top: 6px; color: var(--c); word-spacing: .3em; text-transform: uppercase; }
+.playbox { margin-top: 44px; display: inline-flex; gap: 22px; align-items: center; background: var(--panel); border-radius: 18px; padding: 20px 28px; font-size: 24px; }
+.playbox code { color: var(--gold); font-size: 24px; }
+
+/* ---------- 9 · hero ---------- */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 28px; }
+.dirs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.dir { background: var(--panel-2); border-radius: 16px; display: flex; flex-direction: column; align-items: center; padding: 16px 0 12px; }
+.dir span { font-family: 'GH'; font-size: 18px; color: var(--muted); margin-top: 4px; }
+.stat-row { margin: 16px 0 20px; }
+.stat-row .top { display: flex; justify-content: space-between; font-family: 'GH'; font-size: 21px; word-spacing: .3em; }
+.stat-row .top span { color: var(--muted); }
+.track { position: relative; height: 16px; background: var(--bg-deep); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+.track .base, .track .max { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width 1.2s var(--ease); transition-delay: calc(var(--i, 0) * 120ms + 300ms); }
+.track .max { background: color-mix(in srgb, var(--c) 28%, transparent); }
+.track .base { background: var(--c); }
+.active .track .base { width: var(--base); }
+.active .track .max { width: var(--max); }
+.keys { display: flex; flex-wrap: wrap; gap: 14px 26px; }
+.key { display: flex; align-items: center; gap: 12px; font-size: 21px; color: #d7e0d2; }
+.key kbd { font-family: 'GH'; font-size: 18px; color: #14231a; background: #dfe7d6; border-radius: 9px; padding: 9px 14px; box-shadow: 0 5px 0 #8fa08a; }
+
+/* ---------- 10 · bestiary ---------- */
+.beasts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+.beast { background: var(--panel); border-radius: 18px; padding: 16px 18px 18px; }
+.beast.boss { border: 4px solid var(--gold); background: #282a1a; }
+.beast .pic { height: 170px; border-radius: 12px; background: var(--panel-2); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.beast .pic .badge { position: absolute; right: 10px; top: 10px; background: var(--gold); color: #14231a; font-family: 'GH'; font-size: 16px; padding: 4px 10px; border-radius: 6px; }
+.beast .name { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 8px; }
+.beast .name b { font-family: 'GH'; font-weight: normal; font-size: 23px; word-spacing: .3em; text-transform: uppercase; }
+.beast.boss .name b { color: var(--gold); }
+.beast .name span { font-family: 'GH'; font-size: 15px; color: var(--muted); text-transform: uppercase; word-spacing: .3em; }
+.mini { display: grid; grid-template-columns: 46px 1fr 44px; align-items: center; gap: 10px; font-family: 'GH'; font-size: 15px; color: var(--muted); margin: 6px 0; }
+.mini .track { height: 10px; margin: 0; }
+.mini b { color: var(--txt); font-weight: normal; text-align: right; }
+.beast .meta { display: flex; justify-content: space-between; font-family: 'GH'; font-size: 15px; color: var(--muted); margin-top: 10px; word-spacing: .3em; }
+
+/* ---------- 11 · arsenal ---------- */
+.arsenal { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.weapons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.weapon { background: var(--panel-2); border-radius: 14px; padding: 16px 12px; text-align: center; }
+.weapon .w-img { height: 104px; display: flex; align-items: center; justify-content: center; }
+.weapon .w-img img { height: 92px; image-rendering: pixelated; animation: swing 2.6s ease-in-out infinite; animation-delay: calc(var(--i) * -.4s); }
+@keyframes swing { 50% { transform: rotate(-12deg) translateY(-6px); } }
+.weapon b { display: block; font-family: 'GH'; font-weight: normal; font-size: 20px; margin: 8px 0 6px; }
+.weapon span { display: block; font-family: 'GH'; font-size: 15px; color: var(--muted); }
+.spell { display: grid; grid-template-columns: 100px 1fr; gap: 20px; align-items: center; margin-bottom: 10px; }
+.spell .icon { width: 100px; height: 100px; border-radius: 16px; background: var(--panel-2); display: flex; align-items: center; justify-content: center; }
+.spell .icon img { width: 80px; image-rendering: pixelated; }
+.spell h4 { font-family: 'GH'; font-weight: normal; font-size: 26px; word-spacing: .3em; }
+.spell h4 small { font-size: 16px; color: var(--muted); margin-left: 14px; }
+.spell p { font-size: 20px; color: #d7e0d2; margin: 6px 0 4px; }
+.fxs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.fx { background: var(--panel-2); border-radius: 12px; height: 128px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.fx span { font-family: 'GH'; font-size: 14px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+
+/* ---------- 12 · rules ---------- */
+.rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.rule { background: var(--panel); border-radius: 18px; padding: 34px 34px; border-left: 8px solid var(--c); min-height: 320px; }
+.rule .k { font-family: 'GH'; color: var(--c); font-size: 26px; word-spacing: .3em; text-transform: uppercase; }
+.rule .f { font-family: var(--mono); font-size: 30px; margin: 26px 0 18px; color: var(--txt); line-height: 1.4; }
+.rule p { font-size: 23px; color: var(--muted); line-height: 1.4; }
+
+/* ---------- 13 · clean code scorecard ---------- */
+.score { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 24px; }
+.sc { background: var(--panel); border-radius: 16px; padding: 24px 26px; min-height: 160px; display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; }
+.sc .n { font-family: 'GH'; font-size: 54px; color: var(--grass); text-align: center; line-height: 1; }
+.sc .n small { display: block; font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.2; word-spacing: .2em; }
+.sc h4 { font-family: 'GH'; font-weight: normal; font-size: 23px; color: var(--gold); text-transform: uppercase; word-spacing: .3em; }
+.sc p { font-size: 21px; color: #d7e0d2; line-height: 1.38; margin-top: 6px; }
+
+/* ---------- 14-17 · before / after ---------- */
+.s-ba { padding-top: 60px; }
+.s-ba .head { margin-bottom: 24px; }
+.s-ba .head h2 { font-size: 54px; }
+.ba-top { display: grid; grid-template-columns: 1fr 1fr 360px; gap: 22px; margin-bottom: 22px; }
+.ba-top .card { padding: 20px 26px; }
+.ba-top .card p { font-size: 21px; }
+.ba-top .card h3 { font-size: 21px; margin-bottom: 8px; }
+.metric { background: var(--panel); border-radius: 20px; padding: 18px 24px; display: flex; flex-direction: column; justify-content: center; }
+.metric .vals { display: flex; align-items: center; gap: 16px; font-family: 'GH'; font-size: 58px; line-height: 1; }
+.metric .vals .from { color: var(--red); text-decoration: line-through; text-decoration-thickness: 5px; }
+.metric .vals .to { color: var(--grass); }
+.metric .vals i { font-style: normal; color: var(--muted); font-size: 40px; }
+.metric > span { font-size: 19px; color: var(--muted); margin-top: 10px; }
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; height: 620px; }
+.pane { background: var(--bg-deep); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; border: 2px solid var(--line); }
+.pane .tab { display: flex; align-items: center; gap: 12px; padding: 14px 22px; background: var(--panel); font-family: 'GH'; font-size: 20px; word-spacing: .3em; }
+.pane .tab i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); }
+.pane.before { --c: var(--red); }
+.pane.after { --c: var(--grass); }
+.pane .tab b { color: var(--c); font-weight: normal; }
+.code { font-family: var(--mono); font-size: 18px; line-height: 1.5; padding: 14px 0; color: #d7e0d2; white-space: pre-wrap; overflow: hidden; flex: 1; }
+.code .cl { padding-right: 22px; text-indent: -4ch; position: relative; }
+.code .cl.label { text-indent: 0; padding-left: 22px; color: var(--dim); font-family: var(--sans); font-size: 16px; padding-top: 10px; padding-bottom: 2px; letter-spacing: .02em; }
+.code .cl.del { background: rgba(226,87,76,.0); transition: background .6s ease; transition-delay: calc(var(--k, 0) * 60ms + 700ms); }
+.active .code .cl.del { background: rgba(226,87,76,.16); box-shadow: inset 4px 0 0 var(--red); }
+.code .cl.add { background: rgba(155,197,61,.0); transition: background .6s ease; transition-delay: calc(var(--k, 0) * 60ms + 1300ms); }
+.active .code .cl.add { background: rgba(155,197,61,.14); box-shadow: inset 4px 0 0 var(--grass); }
+.t-kw { color: #f2c14e; } .t-str { color: #9bc53d; } .t-com { color: #6f8270; font-style: italic; } .t-doc { color: #8fae7a; font-style: italic; }
+.t-num { color: #f39c6b; } .t-self { color: #b07ce8; } .t-fn { color: #71ddee; } .t-const { color: #f08fb0; }
+
+/* ---------- 18 · tests ---------- */
+.tests { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; }
+.term { background: #0a120d; border-radius: 18px; border: 2px solid var(--line); overflow: hidden; }
+.term .bar { background: var(--panel); padding: 12px 18px; display: flex; gap: 10px; align-items: center; }
+.term .bar i { width: 14px; height: 14px; border-radius: 50%; background: var(--dim); }
+.term .bar span { margin-left: 12px; color: var(--muted); font-size: 18px; }
+.term pre { font-family: var(--mono); font-size: 24px; line-height: 1.6; padding: 28px 30px; color: #d7e0d2; min-height: 430px; }
+.term .ok { color: var(--grass); }
+.term .dots span { opacity: 0; color: var(--grass); }
+.active .term .dots span { animation: appear .01s forwards; animation-delay: calc(var(--k) * 70ms + 900ms); }
+.term .result { opacity: 0; }
+.active .term .result { animation: appear .01s forwards 3s; }
+@keyframes appear { to { opacity: 1; } }
+.tfile { display: grid; grid-template-columns: 250px 60px 1fr; gap: 16px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); font-size: 19px; }
+.tfile code { color: var(--water) !important; background: none !important; padding: 0 !important; font-size: 19px; }
+.tfile b { font-family: 'GH'; font-weight: normal; font-size: 26px; color: var(--grass); text-align: center; }
+.tfile span { color: #d7e0d2; line-height: 1.4; font-size: 20px; }
+.env { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 24px; }
+.env .card { padding: 20px 24px; }
+.env .card h3 { font-size: 20px; }
+.env .card p { font-size: 19px; }
+
+/* ---------- 19 · questions ---------- */
+.s-end { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.s-end h2 { font-family: 'GH'; font-weight: normal; font-size: 140px; color: var(--grass); text-shadow: 7px 7px 0 #1c2e12; word-spacing: .25em; }
+.s-end .sub { font-size: 34px; color: #d7e0d2; margin-top: 18px; }
+.takeaways { display: flex; gap: 22px; margin-top: 50px; }
+.takeaways .card { width: 470px; text-align: left; }
+.takeaways .card p { font-size: 22px; }
+.links { margin-top: 40px; display: flex; gap: 22px; font-size: 22px; color: var(--muted); }
+.links span { background: var(--panel); padding: 12px 20px; border-radius: 12px; }
+.links b { color: var(--gold); font-weight: 600; }
+.cast { position: absolute; bottom: 60px; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-end; gap: 30px; opacity: .95; }
+
+/* ---------- chrome: progress, notes, hint ---------- */
+#progress { position: fixed; left: 0; bottom: 0; height: 5px; background: var(--grass); transition: width .5s var(--ease); z-index: 10; }
+#notes { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(1100px, 92vw); background: rgba(14,25,18,.94); border: 1px solid var(--line);
+  border-radius: 14px; padding: 16px 22px; font-size: 17px; line-height: 1.5; color: #d7e0d2; display: none; z-index: 11; backdrop-filter: blur(6px); }
+#notes b { color: var(--gold); font-family: 'GH'; font-weight: normal; word-spacing: .3em; }
+body.show-notes #notes { display: block; }
+#hint { position: fixed; right: 16px; top: 12px; font-size: 13px; color: var(--dim); z-index: 11; transition: opacity 1s; }
+
+/* ---------- print / PDF: one page per slide, final state ---------- */
+html.print, html.print body { overflow: visible; height: auto; background: var(--bg); }
+html.print #stage { position: static; transform: none !important; }
+html.print .slide { position: relative; opacity: 1; visibility: visible; width: 1920px; height: 1080px; page-break-after: always; break-after: page; }
+html.print [data-a], html.print .uml-class, html.print .uml-edge, html.print .uml-wrap text, html.print .uml-legend { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; }
+html.print .head::before { transform: none; transition: none; }
+html.print .track .base { width: var(--base); transition: none; } html.print .track .max { width: var(--max); transition: none; }
+html.print .plan .step .bar { width: 100%; transition: none; } html.print .timeline span { transform: none; transition: none; }
+html.print .term .dots span, html.print .term .result { opacity: 1; animation: none; }
+html.print .code .cl.del { background: rgba(226,87,76,.16); box-shadow: inset 4px 0 0 var(--red); transition: none; }
+html.print .code .cl.add { background: rgba(155,197,61,.14); box-shadow: inset 4px 0 0 var(--grass); transition: none; }
+html.print .mapbox img { transform: none; transition: none; }
+html.print .s-cover .walker { animation: none; transform: translateX(1240px); }
+html.print .leaf, html.print #progress, html.print #hint, html.print #notes { display: none !important; }
+html.print * { animation-play-state: paused !important; }
+html.print .spr { animation: none !important; }
+@page { size: 1920px 1080px; margin: 0; }
+
+</style></head>
+<body>
+<div id="stage">
+<section class="slide s-cover" style="--sec:#9bc53d">
+<div class="map"></div><div class="shade"></div><div class="leaf" style="left:12%;animation-duration:13s;animation-delay:-2s"><i class="spr" data-s="fx_leaf1" data-sc="0.6" data-fps="10" ></i></div><div class="leaf" style="left:34%;animation-duration:17s;animation-delay:-9s"><i class="spr" data-s="fx_leaf3" data-sc="0.6" data-fps="10" ></i></div><div class="leaf" style="left:58%;animation-duration:15s;animation-delay:-5s"><i class="spr" data-s="fx_leaf1" data-sc="0.6" data-fps="10" ></i></div><div class="leaf" style="left:77%;animation-duration:19s;animation-delay:-12s"><i class="spr" data-s="fx_leaf3" data-sc="0.6" data-fps="10" ></i></div><div class="leaf" style="left:92%;animation-duration:14s;animation-delay:-7s"><i class="spr" data-s="fx_leaf1" data-sc="0.6" data-fps="10" ></i></div>
+<div class="topbar px"><span>A top-down pixel action RPG</span><span>Python · pygame · Tiled</span></div>
+<div class="title" data-a="zoom">GRASS HUNTER</div>
+<div class="tag" data-a>Object-oriented design and Clean Code, applied to a real-time game.</div>
+<div class="course px" data-a>M2 BIDABI · Programmation épurée (Clean Code) · 2026</div>
+<div class="walker"><i class="spr" data-s="hero_right" data-sc="2.2" data-fps="8" ></i></div>
+<div class="boss"><i class="spr" data-s="tengu_blue_idle" data-sc="0.95" data-fps="8" ></i></div>
+<div class="note" hidden>Introduce the project: Grass Hunter, a Zelda-like action RPG written in Python with pygame.
+The world is built in the Tiled map editor. The goal of the talk: show the OOP design and the Clean Code work, not only the game.</div></section>
+<section class="slide " style="--sec:#9bc53d"><div class="head"><h2>Talk plan</h2><p>15 minutes: 12 minutes of talk and 3 minutes of questions</p></div><div class="brand px">Grass Hunter</div><div class="plan"><div class="step" data-a style="--min:2;--c:#9bc53d;--i:0"><div class="bar"></div>
+<div class="num">2<small>min</small></div><h3>Need and goals</h3><p>The subject, the need it answers and the objectives.</p><div class="sprite-slot"><i class="spr" data-s="hero_down" data-sc="1.6" data-fps="7" ></i></div></div><div class="step" data-a style="--min:3;--c:#71ddee;--i:1"><div class="bar"></div>
+<div class="num">3<small>min</small></div><h3>Architecture</h3><p>Modules, UML class diagram and the design choices.</p><div class="sprite-slot"><i class="spr" data-s="fx_aura" data-sc="0.9" data-fps="10" ></i></div></div><div class="step" data-a style="--min:4;--c:#f2c14e;--i:2"><div class="bar"></div>
+<div class="num">4<small>min</small></div><h3>The game</h3><p>The world, the hero, the bestiary, the rules of play.</p><div class="sprite-slot"><i class="spr" data-s="slime3_move" data-sc="1.5" data-fps="7" ></i></div></div><div class="step" data-a style="--min:3;--c:#b07ce8;--i:3"><div class="bar"></div>
+<div class="num">3<small>min</small></div><h3>Clean Code and tests</h3><p>Principles applied, 4 before / after examples, tests.</p><div class="sprite-slot"><i class="spr" data-s="fx_sparkle" data-sc="0.7" data-fps="12" ></i></div></div><div class="step" data-a style="--min:3;--c:#e2574c;--i:4"><div class="bar"></div>
+<div class="num">3<small>min</small></div><h3>Questions</h3><p>Questions and answers.</p><div class="sprite-slot"><i class="spr" data-s="tengu_blue_idle" data-sc="0.4" data-fps="8" ></i></div></div></div><div class="timeline"><span style="--min:2;--c:#9bc53d;--i:0"></span><span style="--min:3;--c:#71ddee;--i:1"></span><span style="--min:4;--c:#f2c14e;--i:2"></span><span style="--min:3;--c:#b07ce8;--i:3"></span><span style="--min:3;--c:#e2574c;--i:4"></span></div>
+<div class="timeline-labels px"><span>0 min</span><span>12 min talk</span><span>15 min</span></div><div class="foot"><span class="chip-sec"><i></i><b class="px">01 · Need and goals</b><span>2 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The talk follows the plan of the brief: 2 minutes on the need, 3 on the architecture, 4 on the game, 3 on Clean Code and tests, then 3 minutes of questions.</div></section>
+<section class="slide " style="--sec:#9bc53d"><div class="head"><h2>The need</h2><p>Why a game, and what we wanted to prove</p></div><div class="brand px">Grass Hunter</div><div class="need">
+<div data-a="left"><p class="big">A real-time game is <em>many objects</em> that move, collide, fight and change state 60 times per second.</p>
+<p style="font-size:27px;color:var(--muted);margin-top:28px;line-height:1.45">The need: build one that stays <b style="color:var(--txt)">readable, testable and easy to extend</b>,
+where adding a monster or a weapon means adding data, not rewriting code.</p>
+<p style="font-size:23px;color:var(--muted);margin-top:24px;line-height:1.45">Subject from the brief's list: <i>a combat game between characters with different stats and abilities</i>.</p>
+<div class="stack" data-a><span><b>Python</b> 3.12 / 3.14</span><span><b>pygame-ce</b> 2.5.8</span><span><b>pytmx</b> 3.32</span><span><b>Tiled</b> map editor</span><span><b>pytest</b></span></div></div>
+<div class="goals"><div class="goal" data-a style="--c:#9bc53d"><div class="k">Playable</div><p>Explore an island, fight 7 kinds of monsters and a boss, cast spells, earn XP and upgrade the hero.</p></div><div class="goal" data-a style="--c:#71ddee"><div class="k">Object-oriented</div><p>One class per role, an Entity parent for everything that moves, composition around Level.</p></div><div class="goal" data-a style="--c:#f2c14e"><div class="k">Data-driven</div><p>Monsters, weapons, spells and stats live in settings.py; the world is a Tiled map.</p></div><div class="goal" data-a style="--c:#b07ce8"><div class="k">Clean and reliable</div><p>Clean Code rules applied step by step, pinned environment, automated tests.</p></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">01 · Need and goals</b><span>2 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The need: games are a good test of OOP because many objects interact every frame. Our objectives: a complete playable game, a clean object design, content defined as data, and code that is tested and reproducible.</div></section>
+<section class="slide " style="--sec:#9bc53d"><div class="head"><h2>The world</h2><p>One map built in Tiled and read by the game: walls, grass, objects and monsters are all map data</p></div><div class="brand px">Grass Hunter</div><div class="world"><div class="mapbox" data-a="zoom"><img src="assets/img/world_map.png" alt="The Grass Hunter world map"><div class="pin" style="--c:#9bc53d;left:31.7%;top:52%"><span>Grasslands</span></div><div class="pin" style="--c:#71ddee;left:60%;top:13%"><span>Boss</span></div><div class="pin" style="--c:#f2c14e;left:80.6%;top:67%"><span>Desert</span></div></div>
+<div class="zones"><div class="zone" data-a="right" style="--c:#9bc53d"><h3 class="px">Grasslands</h3><p>The main island: dirt paths, trees and grass to cut.</p><div class="mons"><i class="spr" data-s="slime3_move" data-sc="0.85" data-fps="7" ></i><i class="spr" data-s="snake3_move" data-sc="0.85" data-fps="7" ></i><i class="spr" data-s="spider_yellow_move" data-sc="0.85" data-fps="7" ></i><i class="spr" data-s="flam_move" data-sc="0.85" data-fps="7" ></i></div></div><div class="zone" data-a="right" style="--c:#71ddee"><h3 class="px">Frozen peak</h3><p>Up the ladder to the north: the boss waits on the snow.</p><div class="mons"><i class="spr" data-s="flam_move" data-sc="0.85" data-fps="7" ></i><i class="spr" data-s="tengu_blue_idle" data-sc="0.4" data-fps="7" ></i></div></div><div class="zone" data-a="right" style="--c:#f2c14e"><h3 class="px">Desert</h3><p>Across the wooden bridge: the tougher monsters.</p><div class="mons"><i class="spr" data-s="mole_move" data-sc="0.85" data-fps="7" ></i><i class="spr" data-s="gold_racoon_move" data-sc="0.85" data-fps="7" ></i><i class="spr" data-s="trex_move" data-sc="0.85" data-fps="7" ></i></div></div><div class="facts" data-a><div class="fact"><b>64×48</b><span>tiles</span></div><div class="fact"><b>3</b><span>zones</span></div>
+<div class="fact"><b>39</b><span>monsters</span></div><div class="fact"><b>1</b><span>boss</span></div></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">01 · Need and goals</b><span>2 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The world is one island designed in Tiled, read by the game with pytmx. Three zones. The 39 monsters are placed by hand in an entities layer of the map: the code only reads their name.</div></section>
+<section class="slide " style="--sec:#71ddee"><div class="head"><h2>Architecture</h2><p>One frame of the game, and how the 15 Python files split the work</p></div><div class="brand px">Grass Hunter</div><div class="arch">
+<div class="loop" data-a="left" style="position:relative">
+<svg viewBox="0 0 980 760">
+ <defs><marker id="ah" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto"><path d="M1 1 L11 6 L1 11" fill="none" stroke="#a9b8a6" stroke-width="2"/></marker></defs>
+ <g font-family="Segoe UI, Arial" fill="#eef2e6">
+  <rect x="90" y="10" width="860" height="86" rx="16" fill="#1f3427" stroke="#9bc53d" stroke-width="2"/>
+  <text x="120" y="48" font-size="27" font-weight="700" fill="#9bc53d">Game.run()</text>
+  <text x="120" y="80" font-size="21" fill="#a9b8a6">main.py · the main loop, 60 frames per second</text>
+  <rect x="90" y="132" width="860" height="70" rx="16" fill="#1f3427"/>
+  <text x="120" y="176" font-size="22">Events: <tspan fill="#f2c14e">close window</tspan> quit · <tspan fill="#f2c14e">M</tspan> menu · <tspan fill="#f2c14e">R</tspan> restart after game over</text>
+  <rect x="90" y="238" width="860" height="86" rx="16" fill="#1f3427" stroke="#9bc53d" stroke-width="2"/>
+  <text x="120" y="276" font-size="27" font-weight="700" fill="#9bc53d">Level.run()</text>
+  <text x="120" y="308" font-size="21" fill="#a9b8a6">level.py · the world: map, sprites, combat, XP, pause, game over</text>
+  <rect x="90" y="360" width="860" height="70" rx="16" fill="#1f3427"/>
+  <text x="120" y="404" font-size="22">Draw: <tspan fill="#71ddee">YsortCameraGroup.custom_draw()</tspan> then <tspan fill="#5aa0e6">UI.display()</tspan></text>
+  <rect x="90" y="466" width="270" height="150" rx="16" fill="#1f3427" stroke="#e2574c" stroke-width="2"/>
+  <text x="112" y="504" font-size="21" font-weight="700" fill="#e2574c">game over</text>
+  <text x="112" y="540" font-size="19">GameOver.display()</text><text x="112" y="570" font-size="18" fill="#a9b8a6">world frozen</text>
+  <rect x="385" y="466" width="270" height="150" rx="16" fill="#1f3427" stroke="#5aa0e6" stroke-width="2"/>
+  <text x="407" y="504" font-size="21" font-weight="700" fill="#5aa0e6">paused (M)</text>
+  <text x="407" y="540" font-size="19">Upgrade.display()</text><text x="407" y="570" font-size="18" fill="#a9b8a6">spend XP on stats</text>
+  <rect x="680" y="466" width="270" height="150" rx="16" fill="#1f3427" stroke="#f2c14e" stroke-width="2"/>
+  <text x="702" y="504" font-size="21" font-weight="700" fill="#f2c14e">playing</text>
+  <text x="702" y="538" font-size="18">sprites.update()</text><text x="702" y="566" font-size="18">enemy_update(player)</text><text x="702" y="594" font-size="18">player_attack_logic()</text>
+  <g stroke="#a9b8a6" stroke-width="2" fill="none">
+   <path d="M520 96 V128" marker-end="url(#ah)"/><path d="M520 202 V234" marker-end="url(#ah)"/><path d="M520 324 V356" marker-end="url(#ah)"/>
+   <path d="M520 430 V448 H225 V462" marker-end="url(#ah)"/><path d="M520 430 V462" marker-end="url(#ah)"/><path d="M520 448 H815 V462" marker-end="url(#ah)"/>
+  </g>
+  <path id="loopback" d="M520 616 V680 H40 V53 H86" fill="none" stroke="#9bc53d" stroke-width="3" stroke-dasharray="10 9" marker-end="url(#ah)"/>
+  <text x="60" y="720" font-size="20" fill="#9bc53d">next frame</text>
+ </g>
+</svg>
+<div class="flow-dot" style="position:absolute;left:0;top:0;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#9bc53d;box-shadow:0 0 18px #9bc53d;
+  offset-path: path('M520 616 V680 H40 V53 H520 V616');"></div>
+</div><div class="layers"><div class="layer" data-a="right" style="--c:#9bc53d"><div class="k">Game loop</div><p><code>main.py</code> <code>level.py</code> · Game owns Level; Level owns everything in the world.</p></div><div class="layer" data-a="right" style="--c:#f2c14e"><div class="k">Characters</div><p><code>entity.py</code> <code>player.py</code> <code>enemy.py</code> · shared movement in Entity.</p></div><div class="layer" data-a="right" style="--c:#5aa0e6"><div class="k">Interface</div><p><code>ui.py</code> <code>upgrade.py</code> <code>game_over.py</code> · drawing only, no game rules.</p></div><div class="layer" data-a="right" style="--c:#b07ce8"><div class="k">Effects</div><p><code>magic.py</code> <code>particles.py</code> <code>weapon.py</code> <code>tile.py</code></p></div><div class="layer" data-a="right" style="--c:#a9b8a6"><div class="k">Data and loading</div><p><code>settings.py</code> all values · <code>support.py</code> images · <code>sound.py</code> sounds</p></div><div class="layer" data-a="right" style="--c:#71ddee"><div class="k">World data</div><p><code>maps/world_map.tmx</code> made in Tiled, read with pytmx</p></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">02 · Architecture</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>One frame: Game.run handles the keys, then Level.run draws the world and the interface, then updates the world unless the game is paused or over. On the right, how the 15 files are grouped: each group has one kind of job.</div></section>
+<section class="slide s-uml" style="--sec:#71ddee"><div class="head"><h2>UML class diagram</h2><p>From the design document (docs/design_document.pdf): 15 classes, 3 helper modules</p></div><div class="brand px">Grass Hunter</div><div class="uml-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" role="img" aria-label="UML class diagram of Grass Hunter">
+<defs>
+<marker id="diamond" viewBox="0 0 20 12" refX="1" refY="6" markerWidth="20" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+  <path d="M1 6 L10 1 L19 6 L10 11 Z" fill="#c9d6c3"/></marker>
+<marker id="triangle" viewBox="0 0 18 16" refX="17" refY="8" markerWidth="18" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto">
+  <path d="M1 1 L17 8 L1 15 Z" fill="#14231a" stroke="#f2c14e" stroke-width="1.8"/></marker>
+<marker id="arrow" viewBox="0 0 14 12" refX="13" refY="6" markerWidth="14" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+  <path d="M1 1 L13 6 L1 11" fill="none" stroke="#a9b8a6" stroke-width="1.6"/></marker>
+<marker id="arrow-red" viewBox="0 0 14 12" refX="13" refY="6" markerWidth="14" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+  <path d="M1 1 L13 6 L1 11" fill="none" stroke="#e2574c" stroke-width="1.6"/></marker>
+</defs>
+<rect width="1920" height="1080" fill="#14231a"/>
+<path class="uml-edge" data-kind="comp" d="M 314.0 79.3 L 380.0 79.3" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/><text x="372" y="71.3" text-anchor="end" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">1</text>
+<path class="uml-edge" data-kind="comp" d="M 380.0 283.8 L 314.0 283.8" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/>
+<path class="uml-edge" data-kind="comp" d="M 380.0 342.0 L 350.0 342.0 L 350.0 536.8 L 314.0 536.8" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/>
+<path class="uml-edge" data-kind="comp" d="M 380.0 342.0 L 350.0 342.0 L 350.0 928.0 L 314.0 928.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/>
+<path class="uml-edge" data-kind="comp" d="M 580.0 372.0 L 580.0 476.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/>
+<path class="uml-edge" data-kind="comp" d="M 169.0 674.0 L 169.0 704.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/><text x="179.0" y="695" text-anchor="start" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">1..*</text>
+<path class="uml-edge" data-kind="assoc" d="M 475.0 634.0 L 475.0 680.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/><text x="483.0" y="670" text-anchor="start" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">draws</text>
+<path class="uml-edge" data-kind="assoc" d="M 685.0 634.0 L 685.0 680.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/><text x="693.0" y="670" text-anchor="start" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">draws</text>
+<path class="uml-edge" data-kind="comp" d="M 780.0 349.0 L 860.0 349.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/><text x="852" y="342.04" text-anchor="end" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">1</text>
+<path class="uml-edge" data-kind="comp" d="M 740.0 372.0 L 740.0 440.0 L 805.0 440.0 L 805.0 820.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/>
+<path class="uml-edge" data-kind="assoc" d="M 805.0 645.0 L 1396.0 645.0 L 1396.0 602.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/><text x="1404.0" y="624" text-anchor="start" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">0..*</text>
+<path class="uml-edge" data-kind="assoc" d="M 805.0 735.0 L 1380.0 735.0 L 1380.0 780.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/><text x="1388.0" y="772" text-anchor="start" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">1</text>
+<path class="uml-edge" data-kind="assoc" d="M 805.0 843.2 L 860.0 843.2" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/><text x="852" y="835.2" text-anchor="end" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">1</text>
+<path class="uml-edge" data-kind="assoc" d="M 1180.0 878.0 L 1220.0 878.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/><text x="1200" y="867.96" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">uses</text>
+<path class="uml-edge" data-kind="dep" d="M 1540.0 859.0 L 1610.0 858.5" fill="none" stroke="#a9b8a6" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#arrow)"/><text x="1575" y="849.0" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#a9b8a6">creates</text>
+<path class="uml-edge" data-kind="inh" d="M 1020.0 330.0 L 1020.0 290.0 L 1180.0 290.0 L 1180.0 239.0" fill="none" stroke="#f2c14e" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#triangle)"/>
+<path class="uml-edge" data-kind="none" d="M 1380.0 330.0 L 1380.0 290.0 L 1180.0 290.0" fill="none" stroke="#f2c14e" stroke-width="1.8" stroke-linejoin="round"/>
+<path class="uml-edge" data-kind="callback" d="M 860.0 534.0 L 835.0 534.0 L 835.0 200.0 L 780.0 200.0" fill="none" stroke="#e2574c" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="3 5" marker-end="url(#arrow-red)"/><text x="788" y="192" text-anchor="start" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12.5" fill="#e2574c">callbacks</text>
+<path class="uml-edge" data-kind="callback-plain" d="M 1284.0 602.0 L 1284.0 622.0 L 835.0 622.0 L 835.0 534.0" fill="none" stroke="#e2574c" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="3 5"/>
+<g class="uml-class" data-group="core">
+<rect x="24" y="24" width="290" height="158" rx="10" fill="#1f3427" stroke="#9bc53d" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="24" y="24" width="290" height="46" rx="10" fill="#9bc53d" fill-opacity=".16"/>
+<rect x="24" y="24" width="5" height="158" rx="2" fill="#9bc53d"/>
+<text x="169.0" y="44" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#9bc53d">Game</text>
+<text x="169.0" y="62" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">main.py</text>
+<text x="40" y="93" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">screen, clock</text>
+<text x="40" y="112" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">level: Level</text>
+<text x="40" y="131" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">main_sound</text>
+<line x1="34" y1="142" x2="304" y2="142" stroke="#9bc53d" stroke-opacity=".3"/>
+<text x="40" y="164" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">run()  # main loop</text>
+</g>
+<g class="uml-class" data-group="ui">
+<rect x="24" y="230" width="290" height="215" rx="10" fill="#1f3427" stroke="#5aa0e6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="24" y="230" width="290" height="46" rx="10" fill="#5aa0e6" fill-opacity=".16"/>
+<rect x="24" y="230" width="5" height="215" rx="2" fill="#5aa0e6"/>
+<text x="169.0" y="250" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#5aa0e6">UI</text>
+<text x="169.0" y="268" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">ui.py</text>
+<text x="40" y="299" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">font</text>
+<text x="40" y="318" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">health_bar_rect, energy_bar_rect</text>
+<line x1="34" y1="329" x2="304" y2="329" stroke="#5aa0e6" stroke-opacity=".3"/>
+<text x="40" y="351" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">display(player)</text>
+<text x="40" y="370" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">show_bar(current, max, rect, color)</text>
+<text x="40" y="389" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">show_exp(exp)</text>
+<text x="40" y="408" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">weapon_overlay(index, switched)</text>
+<text x="40" y="427" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">magic_overlay(index, switched)</text>
+</g>
+<g class="uml-class" data-group="ui">
+<rect x="24" y="478" width="290" height="196" rx="10" fill="#1f3427" stroke="#5aa0e6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="24" y="478" width="290" height="46" rx="10" fill="#5aa0e6" fill-opacity=".16"/>
+<rect x="24" y="478" width="5" height="196" rx="2" fill="#5aa0e6"/>
+<text x="169.0" y="498" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#5aa0e6">Upgrade</text>
+<text x="169.0" y="516" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">upgrade.py</text>
+<text x="40" y="547" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">player: Player</text>
+<text x="40" y="566" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">stat_count, selection_index</text>
+<text x="40" y="585" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">can_move: bool</text>
+<line x1="34" y1="596" x2="304" y2="596" stroke="#5aa0e6" stroke-opacity=".3"/>
+<text x="40" y="618" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">input()</text>
+<text x="40" y="637" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">create_items()</text>
+<text x="40" y="656" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">display()</text>
+</g>
+<g class="uml-class" data-group="ui">
+<rect x="24" y="704" width="290" height="139" rx="10" fill="#1f3427" stroke="#5aa0e6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="24" y="704" width="290" height="46" rx="10" fill="#5aa0e6" fill-opacity=".16"/>
+<rect x="24" y="704" width="5" height="139" rx="2" fill="#5aa0e6"/>
+<text x="169.0" y="724" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#5aa0e6">Item</text>
+<text x="169.0" y="742" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">upgrade.py</text>
+<text x="40" y="773" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">rect, index, font</text>
+<line x1="34" y1="784" x2="304" y2="784" stroke="#5aa0e6" stroke-opacity=".3"/>
+<text x="40" y="806" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">trigger(player)</text>
+<text x="40" y="825" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">display(surface, ...)</text>
+</g>
+<g class="uml-class" data-group="ui">
+<rect x="24" y="880" width="290" height="120" rx="10" fill="#1f3427" stroke="#5aa0e6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="24" y="880" width="290" height="46" rx="10" fill="#5aa0e6" fill-opacity=".16"/>
+<rect x="24" y="880" width="5" height="120" rx="2" fill="#5aa0e6"/>
+<text x="169.0" y="900" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#5aa0e6">GameOver</text>
+<text x="169.0" y="918" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">game_over.py</text>
+<text x="40" y="949" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">big_font, font</text>
+<line x1="34" y1="960" x2="304" y2="960" stroke="#5aa0e6" stroke-opacity=".3"/>
+<text x="40" y="982" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">display()</text>
+</g>
+<g class="uml-class" data-group="core">
+<rect x="380" y="24" width="400" height="348" rx="10" fill="#1f3427" stroke="#9bc53d" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="380" y="24" width="400" height="46" rx="10" fill="#9bc53d" fill-opacity=".16"/>
+<rect x="380" y="24" width="5" height="348" rx="2" fill="#9bc53d"/>
+<text x="580.0" y="44" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#9bc53d">Level</text>
+<text x="580.0" y="62" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">level.py</text>
+<text x="396" y="93" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">visible_sprites: YsortCameraGroup</text>
+<text x="396" y="112" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">obstacle / attack / attackable_sprites</text>
+<text x="396" y="131" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">player, ui, upgrade, game_over_screen</text>
+<text x="396" y="150" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">magic_player, animation_player</text>
+<text x="396" y="169" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">game_paused, game_over: bool</text>
+<line x1="390" y1="180" x2="770" y2="180" stroke="#9bc53d" stroke-opacity=".3"/>
+<text x="396" y="202" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">create_map()  # reads the Tiled map</text>
+<text x="396" y="221" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">run()</text>
+<text x="396" y="240" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">create_attack() / destroy_attack()</text>
+<text x="396" y="259" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">create_magic(style, strength, cost)</text>
+<text x="396" y="278" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">player_attack_logic()</text>
+<text x="396" y="297" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">damage_player(amount, attack_type)</text>
+<text x="396" y="316" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">trigger_game_over()</text>
+<text x="396" y="335" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">add_exp(amount)</text>
+<text x="396" y="354" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">toggle_menu()</text>
+</g>
+<g class="uml-class" data-group="world">
+<rect x="380" y="476" width="400" height="158" rx="10" fill="#1f3427" stroke="#71ddee" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="380" y="476" width="400" height="46" rx="10" fill="#71ddee" fill-opacity=".16"/>
+<rect x="380" y="476" width="5" height="158" rx="2" fill="#71ddee"/>
+<text x="580.0" y="496" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#71ddee">YsortCameraGroup</text>
+<text x="580.0" y="514" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">level.py  ·  extends pygame.sprite.Group</text>
+<text x="396" y="545" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">offset: Vector2</text>
+<text x="396" y="564" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">floor_surf, floor_rect</text>
+<line x1="390" y1="575" x2="770" y2="575" stroke="#71ddee" stroke-opacity=".3"/>
+<text x="396" y="597" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">custom_draw(player)</text>
+<text x="396" y="616" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">enemy_update(player)</text>
+</g>
+<g class="uml-class" data-group="world">
+<rect x="380" y="680" width="190" height="102" rx="10" fill="#1f3427" stroke="#71ddee" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="380" y="680" width="190" height="46" rx="10" fill="#71ddee" fill-opacity=".16"/>
+<rect x="380" y="680" width="5" height="102" rx="2" fill="#71ddee"/>
+<text x="475.0" y="700" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#71ddee">Tile</text>
+<text x="475.0" y="718" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">extends Sprite</text>
+<text x="396" y="749" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">sprite_type</text>
+<text x="396" y="768" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">image, hitbox</text>
+</g>
+<g class="uml-class" data-group="world">
+<rect x="590" y="680" width="190" height="102" rx="10" fill="#1f3427" stroke="#71ddee" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="590" y="680" width="190" height="46" rx="10" fill="#71ddee" fill-opacity=".16"/>
+<rect x="590" y="680" width="5" height="102" rx="2" fill="#71ddee"/>
+<text x="685.0" y="700" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#71ddee">Weapon</text>
+<text x="685.0" y="718" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">extends Sprite</text>
+<text x="606" y="749" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">sprite_type</text>
+<text x="606" y="768" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">image, rect</text>
+</g>
+<g class="uml-class" data-group="ent">
+<rect x="1000" y="24" width="360" height="215" rx="10" fill="#1f3427" stroke="#f2c14e" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1000" y="24" width="360" height="46" rx="10" fill="#f2c14e" fill-opacity=".16"/>
+<rect x="1000" y="24" width="5" height="215" rx="2" fill="#f2c14e"/>
+<text x="1180.0" y="44" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#f2c14e">Entity</text>
+<text x="1180.0" y="62" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">entity.py  ·  extends pygame.sprite.Sprite</text>
+<text x="1016" y="93" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">frame_index, animation_speed</text>
+<text x="1016" y="112" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">direction: Vector2</text>
+<text x="1016" y="131" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">hitbox, obstacle_sprites</text>
+<line x1="1010" y1="142" x2="1350" y2="142" stroke="#f2c14e" stroke-opacity=".3"/>
+<text x="1016" y="164" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">move(speed)</text>
+<text x="1016" y="183" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">collision(direction)</text>
+<text x="1016" y="202" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">wave_value()</text>
+<text x="1016" y="221" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">flicker()</text>
+</g>
+<g class="uml-class" data-group="ent">
+<rect x="860" y="330" width="320" height="272" rx="10" fill="#1f3427" stroke="#f2c14e" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="860" y="330" width="320" height="46" rx="10" fill="#f2c14e" fill-opacity=".16"/>
+<rect x="860" y="330" width="5" height="272" rx="2" fill="#f2c14e"/>
+<text x="1020.0" y="350" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#f2c14e">Player</text>
+<text x="1020.0" y="368" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">player.py</text>
+<text x="876" y="399" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">stats, max_stats, upgrade_cost</text>
+<text x="876" y="418" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">health, energy, exp</text>
+<text x="876" y="437" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">weapon, magic, status</text>
+<line x1="870" y1="448" x2="1170" y2="448" stroke="#f2c14e" stroke-opacity=".3"/>
+<text x="876" y="470" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">input()</text>
+<text x="876" y="489" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">get_status() / animate()</text>
+<text x="876" y="508" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">cooldowns()</text>
+<text x="876" y="527" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">get_full_weapon_damage()</text>
+<text x="876" y="546" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">get_full_magic_damage()</text>
+<text x="876" y="565" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">energy_recovery()</text>
+<text x="876" y="584" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">update()</text>
+</g>
+<g class="uml-class" data-group="ent">
+<rect x="1220" y="330" width="320" height="272" rx="10" fill="#1f3427" stroke="#f2c14e" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1220" y="330" width="320" height="46" rx="10" fill="#f2c14e" fill-opacity=".16"/>
+<rect x="1220" y="330" width="5" height="272" rx="2" fill="#f2c14e"/>
+<text x="1380.0" y="350" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#f2c14e">Enemy</text>
+<text x="1380.0" y="368" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">enemy.py</text>
+<text x="1236" y="399" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">monster_name, status</text>
+<text x="1236" y="418" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">health, exp, speed, damage</text>
+<text x="1236" y="437" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">notice_radius, attack_radius</text>
+<line x1="1230" y1="448" x2="1530" y2="448" stroke="#f2c14e" stroke-opacity=".3"/>
+<text x="1236" y="470" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">get_status(player) / actions(player)</text>
+<text x="1236" y="489" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">animate()</text>
+<text x="1236" y="508" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">cooldowns() / hit_reaction()</text>
+<text x="1236" y="527" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">get_damage(player, attack_type)</text>
+<text x="1236" y="546" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">check_death()</text>
+<text x="1236" y="565" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">enemy_update(player)</text>
+<text x="1236" y="584" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">update()</text>
+</g>
+<g class="uml-class" data-group="fx">
+<rect x="860" y="780" width="320" height="158" rx="10" fill="#1f3427" stroke="#b07ce8" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="860" y="780" width="320" height="46" rx="10" fill="#b07ce8" fill-opacity=".16"/>
+<rect x="860" y="780" width="5" height="158" rx="2" fill="#b07ce8"/>
+<text x="1020.0" y="800" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#b07ce8">MagicPlayer</text>
+<text x="1020.0" y="818" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">magic.py</text>
+<text x="876" y="849" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">animation_player</text>
+<text x="876" y="868" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">sounds: dict</text>
+<line x1="870" y1="879" x2="1170" y2="879" stroke="#b07ce8" stroke-opacity=".3"/>
+<text x="876" y="901" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">heal(player, strength, cost, groups)</text>
+<text x="876" y="920" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">flame(player, strength, cost, groups)</text>
+</g>
+<g class="uml-class" data-group="fx">
+<rect x="1220" y="780" width="320" height="158" rx="10" fill="#1f3427" stroke="#b07ce8" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1220" y="780" width="320" height="46" rx="10" fill="#b07ce8" fill-opacity=".16"/>
+<rect x="1220" y="780" width="5" height="158" rx="2" fill="#b07ce8"/>
+<text x="1380.0" y="800" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#b07ce8">AnimationPlayer</text>
+<text x="1380.0" y="818" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">particles.py</text>
+<text x="1236" y="849" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">frames: dict</text>
+<line x1="1230" y1="860" x2="1530" y2="860" stroke="#b07ce8" stroke-opacity=".3"/>
+<text x="1236" y="882" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">create_particles(type, pos, groups)</text>
+<text x="1236" y="901" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">create_grass_particles(pos, groups)</text>
+<text x="1236" y="920" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">reflect_images(frames)</text>
+</g>
+<g class="uml-class" data-group="fx">
+<rect x="1610" y="789" width="286" height="139" rx="10" fill="#1f3427" stroke="#b07ce8" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1610" y="789" width="286" height="46" rx="10" fill="#b07ce8" fill-opacity=".16"/>
+<rect x="1610" y="789" width="5" height="139" rx="2" fill="#b07ce8"/>
+<text x="1753.0" y="809" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#b07ce8">ParticleEffect</text>
+<text x="1753.0" y="827" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">particles.py  ·  extends Sprite</text>
+<text x="1626" y="858" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">frames, frame_index</text>
+<line x1="1620" y1="869" x2="1886" y2="869" stroke="#b07ce8" stroke-opacity=".3"/>
+<text x="1626" y="891" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">animate()</text>
+<text x="1626" y="910" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">update()</text>
+</g>
+<g class="uml-class" data-group="mod">
+<rect x="1610" y="24" width="286" height="140" rx="10" fill="#1f3427" stroke="#a9b8a6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1610" y="24" width="286" height="46" rx="10" fill="#a9b8a6" fill-opacity=".16"/>
+<rect x="1610" y="24" width="5" height="140" rx="2" fill="#a9b8a6"/>
+<text x="1753.0" y="44" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#a9b8a6">settings</text>
+<text x="1753.0" y="62" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">settings.py  ·  module (data)</text>
+<text x="1626" y="93" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">weapon_data, magic_data</text>
+<text x="1626" y="112" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">monster_data</text>
+<text x="1626" y="131" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">PLAYER_STATS, PLAYER_MAX_STATS</text>
+<text x="1626" y="150" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#d7e0d2">cooldowns (ms), colours, sizes</text>
+</g>
+<g class="uml-class" data-group="mod">
+<rect x="1610" y="228" width="286" height="102" rx="10" fill="#1f3427" stroke="#a9b8a6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1610" y="228" width="286" height="46" rx="10" fill="#a9b8a6" fill-opacity=".16"/>
+<rect x="1610" y="228" width="5" height="102" rx="2" fill="#a9b8a6"/>
+<text x="1753.0" y="248" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#a9b8a6">support</text>
+<text x="1753.0" y="266" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">support.py  ·  module</text>
+<text x="1626" y="297" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">import_folder(path)</text>
+<text x="1626" y="316" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">frame_number(file_name)</text>
+</g>
+<g class="uml-class" data-group="mod">
+<rect x="1610" y="384" width="286" height="83" rx="10" fill="#1f3427" stroke="#a9b8a6" stroke-opacity=".55" stroke-width="1.5"/>
+<rect x="1610" y="384" width="286" height="46" rx="10" fill="#a9b8a6" fill-opacity=".16"/>
+<rect x="1610" y="384" width="5" height="83" rx="2" fill="#a9b8a6"/>
+<text x="1753.0" y="404" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="17" fill="#a9b8a6">sound</text>
+<text x="1753.0" y="422" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-style="italic" font-size="12" fill="#a9b8a6">sound.py  ·  module (cache)</text>
+<text x="1626" y="453" font-family="Consolas, 'Cascadia Mono', 'Courier New', monospace" font-size="13.5" fill="#eef2e6">load_sound(path, volume)</text>
+</g>
+<g class="uml-legend"><rect x="1610" y="530" width="286" height="196" rx="10" fill="#1f3427"/>
+<text x="1626" y="558" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="14" fill="#eef2e6">LEGEND</text>
+<path class="uml-edge" data-kind="inh" d="M 1628.0 586.0 L 1670.0 586.0" fill="none" stroke="#f2c14e" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#triangle)"/>
+<text x="1684" y="590.5" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#d7e0d2">inherits from</text>
+<path class="uml-edge" data-kind="comp" d="M 1670.0 614.0 L 1628.0 614.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-start="url(#diamond)"/>
+<text x="1684" y="618.5" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#d7e0d2">owns (composition)</text>
+<path class="uml-edge" data-kind="dep" d="M 1628.0 642.0 L 1670.0 642.0" fill="none" stroke="#a9b8a6" stroke-width="1.4" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<text x="1684" y="646.5" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#d7e0d2">creates</text>
+<path class="uml-edge" data-kind="assoc" d="M 1628.0 670.0 L 1670.0 670.0" fill="none" stroke="#c9d6c3" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1684" y="674.5" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#d7e0d2">uses</text>
+<path class="uml-edge" data-kind="callback" d="M 1628.0 698.0 L 1670.0 698.0" fill="none" stroke="#e2574c" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="3 5" marker-end="url(#arrow-red)"/>
+<text x="1684" y="702.5" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#d7e0d2">calls back (function passed in)</text>
+</g>
+<text x="1200" y="1010" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="15" fill="#a9b8a6">15 classes in 12 files · 3 helper modules (settings, support, sound) · Sprite and Group are pygame base classes</text>
+</svg></div><div class="foot"><span class="chip-sec"><i></i><b class="px">02 · Architecture</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The UML class diagram, also in the design document. Read it from Level, in the middle: it owns the player, the enemies, the interface and the effects. Yellow: inheritance from Entity. Red dashed: callbacks, Level hands its methods to Player and Enemy so they never import Level.</div></section>
+<section class="slide " style="--sec:#71ddee"><div class="head"><h2>Design choices</h2><p>Simple OOP: each mechanism is used only where it brings something</p></div><div class="brand px">Grass Hunter</div><div class="choices"><div class="choice" data-a style="--c:#f2c14e"><div class="k">Inheritance</div><p>Player and Enemy extend Entity: movement, collisions and the hit flicker are written once.</p><pre><span class="t-kw">class</span> <span class="t-fn">Player</span>(Entity): ...<br><span class="t-kw">class</span> <span class="t-fn">Enemy</span>(Entity): ...<br><span class="t-com"># move(), collision(), flicker()</span><br><span class="t-com"># come from Entity</span></pre></div><div class="choice" data-a style="--c:#f2c14e"><div class="k">Polymorphism</div><p>One call updates every sprite; each class answers in its own way.</p><pre><span class="t-self">self</span>.visible_sprites.<span class="t-fn">update</span>()<br><span class="t-com"># Player.update()   reads keys</span><br><span class="t-com"># Enemy.update()    chases</span><br><span class="t-com"># ParticleEffect.update() plays</span></pre></div><div class="choice" data-a style="--c:#9bc53d"><div class="k">Composition</div><p>Level is built from parts it owns and drives every frame.</p><pre><span class="t-self">self</span>.ui = <span class="t-fn">UI</span>()<br><span class="t-self">self</span>.upgrade = <span class="t-fn">Upgrade</span>(<span class="t-self">self</span>.player)<br><span class="t-self">self</span>.magic_player = <span class="t-fn">MagicPlayer</span>(<br>    <span class="t-self">self</span>.animation_player)</pre></div><div class="choice" data-a style="--c:#e2574c"><div class="k">Callbacks</div><p>Enemies receive the Level methods they need: no import of Level, low coupling.</p><pre><span class="t-fn">Enemy</span>(name, pos, groups, obstacles,<br>      <span class="t-self">self</span>.damage_player,<br>      <span class="t-self">self</span>.trigger_death_particles,<br>      <span class="t-self">self</span>.add_exp)</pre></div><div class="choice" data-a style="--c:#71ddee"><div class="k">Data-driven</div><p>A new monster is one entry in settings.py, placed on the map in Tiled.</p><pre><span class="t-str">&#x27;flam&#x27;</span>: {<span class="t-str">&#x27;health&#x27;</span>: <span class="t-num">90</span>, <span class="t-str">&#x27;exp&#x27;</span>: <span class="t-num">100</span>,<br>  <span class="t-str">&#x27;damage&#x27;</span>: <span class="t-num">30</span>, <span class="t-str">&#x27;speed&#x27;</span>: <span class="t-num">3</span>,<br>  <span class="t-str">&#x27;attack_type&#x27;</span>: <span class="t-str">&#x27;fireball&#x27;</span>,<br>  <span class="t-str">&#x27;death_effect&#x27;</span>: <span class="t-str">&#x27;spirit_explosion&#x27;</span>}</pre></div><div class="choice" data-a style="--c:#b07ce8"><div class="k">Groups as roles</div><p>A sprite's groups say what it does; collisions are one call per role.</p><pre>visible_sprites     <span class="t-com"># drawn</span><br>obstacle_sprites    <span class="t-com"># block moves</span><br>attack_sprites      <span class="t-com"># weapon, flames</span><br>attackable_sprites  <span class="t-com"># grass, enemies</span></pre></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">02 · Architecture</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The six design choices. Inheritance only where it removes duplication (Entity). Polymorphism through pygame groups. Composition around Level. Callbacks keep enemies independent of Level. Content is data. Sprite groups describe roles.</div></section>
+<section class="slide s-divider" style="--sec:#f2c14e"><div data-a="left"><div class="eyebrow">03 · The game</div><h2>PLAY IT</h2>
+<p class="lead">No live demo needed: the game is online. Clone it, install, play.</p>
+<div class="playbox"><span class="px" style="color:var(--muted)">GitHub</span><code>github.com/Fuestsugama/grass_hunter_2D</code></div><br>
+<div class="playbox"><span class="px" style="color:var(--muted)">Run</span><code>pip install -r requirements.txt  &amp;&amp;  python code/main.py</code></div></div>
+<div class="cycle"><div class="ring"></div><div class="node" data-a style="--c:#9bc53d;left:50%;top:10%"><div class="ic"><i class="spr" data-s="hero_down" data-sc="1.5" data-fps="7" ></i></div><b>Explore</b></div><div class="node" data-a style="--c:#e2574c;left:88%;top:37.6%"><div class="ic"><i class="spr" data-s="slime3_attack" data-sc="1.5" data-fps="8" ></i></div><b>Fight</b></div><div class="node" data-a style="--c:#f2c14e;left:73.5%;top:82.4%"><div class="ic"><i class="spr" data-s="fx_sparkle" data-sc="1" data-fps="12" ></i></div><b>Earn XP</b></div><div class="node" data-a style="--c:#5aa0e6;left:26.5%;top:82.4%"><div class="ic"><i class="spr" data-s="fx_aura" data-sc="1" data-fps="10" ></i></div><b>Upgrade</b></div><div class="node" data-a style="--c:#b07ce8;left:12%;top:37.6%"><div class="ic"><i class="spr" data-s="tengu_blue_idle" data-sc="0.45" data-fps="8" ></i></div><b>Boss</b></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">03 · The game</b><span>4 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The game is available online, so instead of a live demo we walk through its features on the next slides. The loop of play: explore, fight, earn XP, upgrade, and face the boss.</div></section>
+<section class="slide " style="--sec:#f2c14e"><div class="head"><h2>The hero</h2><p>Walk, attack and cast in 4 directions; five stats that can be upgraded</p></div><div class="brand px">Grass Hunter</div><div class="hero"><div class="card" data-a="left"><h3>Animations · 4 directions</h3><div class="dirs"><div class="dir"><i class="spr" data-s="hero_down" data-sc="2.3" data-fps="7" ></i><span>DOWN</span></div><div class="dir"><i class="spr" data-s="hero_up" data-sc="2.3" data-fps="7" ></i><span>UP</span></div><div class="dir"><i class="spr" data-s="hero_left" data-sc="2.3" data-fps="7" ></i><span>LEFT</span></div><div class="dir"><i class="spr" data-s="hero_right" data-sc="2.3" data-fps="7" ></i><span>RIGHT</span></div><div class="dir"><i class="spr" data-s="hero_down_attack" data-sc="2.3" data-fps="8" ></i><span>ATTACK</span></div><div class="dir"><i class="spr" data-s="hero_up_attack" data-sc="2.3" data-fps="8" ></i><span>ATTACK</span></div><div class="dir"><i class="spr" data-s="hero_left_attack" data-sc="2.3" data-fps="8" ></i><span>ATTACK</span></div><div class="dir"><i class="spr" data-s="hero_right_attack" data-sc="2.3" data-fps="8" ></i><span>ATTACK</span></div></div>
+<p class="muted" style="font-size:19px;margin-top:16px">Status strings drive the animation: <code>down</code>, <code>down_idle</code>, <code>down_attack</code>…</p></div>
+<div style="display:flex;flex-direction:column;gap:24px"><div class="card" data-a="right"><h3>Base stats › max</h3><div class="stat-row" style="--c:#e2574c;--i:0"><div class="top"><b style="font-weight:normal">HEALTH</b><span>100 › 300</span></div>
+<div class="track"><div class="max" style="--max:100%"></div><div class="base" style="--base:33%"></div></div></div><div class="stat-row" style="--c:#5aa0e6;--i:1"><div class="top"><b style="font-weight:normal">ENERGY</b><span>60 › 140</span></div>
+<div class="track"><div class="max" style="--max:100%"></div><div class="base" style="--base:43%"></div></div></div><div class="stat-row" style="--c:#f2c14e;--i:2"><div class="top"><b style="font-weight:normal">ATTACK</b><span>10 › 20</span></div>
+<div class="track"><div class="max" style="--max:100%"></div><div class="base" style="--base:50%"></div></div></div><div class="stat-row" style="--c:#b07ce8;--i:3"><div class="top"><b style="font-weight:normal">MAGIC</b><span>4 › 10</span></div>
+<div class="track"><div class="max" style="--max:100%"></div><div class="base" style="--base:40%"></div></div></div><div class="stat-row" style="--c:#9bc53d;--i:4"><div class="top"><b style="font-weight:normal">SPEED</b><span>5 › 10</span></div>
+<div class="track"><div class="max" style="--max:100%"></div><div class="base" style="--base:50%"></div></div></div>
+<p class="muted" style="font-size:19px">Spend XP from slain monsters in the upgrade menu (M).</p></div>
+<div class="card" data-a="right"><h3>Controls</h3><div class="keys"><div class="key"><kbd>ARROWS</kbd>Move</div><div class="key"><kbd>SPACE</kbd>Attack</div><div class="key"><kbd>L-CTRL</kbd>Cast spell</div><div class="key"><kbd>Q</kbd>Switch weapon</div><div class="key"><kbd>E</kbd>Switch spell</div><div class="key"><kbd>M</kbd>Upgrade menu</div><div class="key"><kbd>R</kbd>Restart</div></div></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">03 · The game</b><span>4 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The hero: walk, idle and attack animations in four directions. Five stats, each with a maximum, raised with XP. Controls on the right.</div></section>
+<section class="slide " style="--sec:#f2c14e"><div class="head"><h2>Bestiary</h2><p>7 monster types and 1 boss: one Enemy class, eight entries of data</p></div><div class="brand px">Grass Hunter</div><div class="beasts"><div class="beast" data-a style="--i:0"><div class="pic"><i class="spr" data-s="slime3_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>Slime</b><span>slash attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:0">HP<div class="track"><div class="base" style="--base:27%"></div></div><b>80</b></div>
+<div class="mini" style="--c:#f2c14e;--i:0">DMG<div class="track"><div class="base" style="--base:20%"></div></div><b>10</b></div>
+<div class="meta"><span>XP 50</span><span>SPEED 2</span><span>RANGE 80</span></div></div><div class="beast" data-a style="--i:1"><div class="pic"><i class="spr" data-s="snake3_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>Snake</b><span>bite attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:1">HP<div class="track"><div class="base" style="--base:23%"></div></div><b>70</b></div>
+<div class="mini" style="--c:#f2c14e;--i:1">DMG<div class="track"><div class="base" style="--base:30%"></div></div><b>15</b></div>
+<div class="meta"><span>XP 60</span><span>SPEED 3</span><span>RANGE 50</span></div></div><div class="beast" data-a style="--i:2"><div class="pic"><i class="spr" data-s="spider_yellow_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>Spider</b><span>bite attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:2">HP<div class="track"><div class="base" style="--base:20%"></div></div><b>60</b></div>
+<div class="mini" style="--c:#f2c14e;--i:2">DMG<div class="track"><div class="base" style="--base:30%"></div></div><b>15</b></div>
+<div class="meta"><span>XP 70</span><span>SPEED 4</span><span>RANGE 40</span></div></div><div class="beast" data-a style="--i:3"><div class="pic"><i class="spr" data-s="flam_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>Flam</b><span>fireball attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:3">HP<div class="track"><div class="base" style="--base:30%"></div></div><b>90</b></div>
+<div class="mini" style="--c:#f2c14e;--i:3">DMG<div class="track"><div class="base" style="--base:60%"></div></div><b>30</b></div>
+<div class="meta"><span>XP 100</span><span>SPEED 3</span><span>RANGE 120</span></div></div><div class="beast" data-a style="--i:4"><div class="pic"><i class="spr" data-s="mole_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>Mole</b><span>dig attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:4">HP<div class="track"><div class="base" style="--base:33%"></div></div><b>100</b></div>
+<div class="mini" style="--c:#f2c14e;--i:4">DMG<div class="track"><div class="base" style="--base:50%"></div></div><b>25</b></div>
+<div class="meta"><span>XP 120</span><span>SPEED 2</span><span>RANGE 60</span></div></div><div class="beast" data-a style="--i:5"><div class="pic"><i class="spr" data-s="gold_racoon_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>Gold Raccoon</b><span>claw attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:5">HP<div class="track"><div class="base" style="--base:23%"></div></div><b>70</b></div>
+<div class="mini" style="--c:#f2c14e;--i:5">DMG<div class="track"><div class="base" style="--base:40%"></div></div><b>20</b></div>
+<div class="meta"><span>XP 80</span><span>SPEED 3</span><span>RANGE 50</span></div></div><div class="beast" data-a style="--i:6"><div class="pic"><i class="spr" data-s="trex_move" data-sc="2.3" data-fps="7" ></i></div>
+<div class="name"><b>T-Rex</b><span>bite attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:6">HP<div class="track"><div class="base" style="--base:40%"></div></div><b>120</b></div>
+<div class="mini" style="--c:#f2c14e;--i:6">DMG<div class="track"><div class="base" style="--base:80%"></div></div><b>40</b></div>
+<div class="meta"><span>XP 150</span><span>SPEED 2</span><span>RANGE 80</span></div></div><div class="beast boss" data-a style="--i:7"><div class="pic"><span class="badge">BOSS</span><i class="spr" data-s="tengu_blue_idle" data-sc="0.72" data-fps="8" ></i></div>
+<div class="name"><b>Tengu</b><span>slash attack</span></div>
+<div class="mini" style="--c:#e2574c;--i:7">HP<div class="track"><div class="base" style="--base:100%"></div></div><b>300</b></div>
+<div class="mini" style="--c:#f2c14e;--i:7">DMG<div class="track"><div class="base" style="--base:100%"></div></div><b>50</b></div>
+<div class="meta"><span>XP 300</span><span>SPEED 3</span><span>RANGE 100</span></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">03 · The game</b><span>4 min</span></span><span class="px page-num"></span></div><div class="note" hidden>Seven monster types and the Tengu boss. Every number here is read from monster_data in settings.py: one dictionary entry per monster, used by one Enemy class.</div></section>
+<section class="slide " style="--sec:#f2c14e"><div class="head"><h2>Arsenal and magic</h2><p>Weapons swing in the hero's hand; spells spend energy that slowly refills</p></div><div class="brand px">Grass Hunter</div><div class="arsenal"><div class="card" data-a="left" style="grid-column:1 / span 2"><h3>Weapons · switch with Q</h3><div class="weapons"><div class="weapon" style="--i:0"><div class="w-img"><img src="assets/img/weapon_sword.png" alt="sword"></div><b class="px">sword</b>
+<span>DMG 15</span><span>100 MS</span></div><div class="weapon" style="--i:1"><div class="w-img"><img src="assets/img/weapon_lance.png" alt="lance"></div><b class="px">lance</b>
+<span>DMG 30</span><span>400 MS</span></div><div class="weapon" style="--i:2"><div class="w-img"><img src="assets/img/weapon_axe.png" alt="axe"></div><b class="px">axe</b>
+<span>DMG 20</span><span>300 MS</span></div><div class="weapon" style="--i:3"><div class="w-img"><img src="assets/img/weapon_rapier.png" alt="rapier"></div><b class="px">rapier</b>
+<span>DMG 10</span><span>50 MS</span></div><div class="weapon" style="--i:4"><div class="w-img"><img src="assets/img/weapon_sai.png" alt="sai"></div><b class="px">sai</b>
+<span>DMG 8</span><span>80 MS</span></div></div></div>
+<div class="card" data-a="left"><h3>Spells · E switch · Ctrl cast</h3>
+<div class="spell"><div class="icon"><img src="assets/img/spell_flame.png" alt="flame"></div><div><h4>FLAME<small>STRENGTH 5 · COST 20</small></h4>
+<p>Five bursts of fire in the facing direction.</p><div style="display:flex;gap:4px"><i class="spr" data-s="fx_flame" data-sc="0.62" data-fps="10" ></i><i class="spr" data-s="fx_flame" data-sc="0.62" data-fps="13" ></i><i class="spr" data-s="fx_flame" data-sc="0.62" data-fps="9" ></i><i class="spr" data-s="fx_flame" data-sc="0.62" data-fps="12" ></i><i class="spr" data-s="fx_flame" data-sc="0.62" data-fps="11" ></i></div></div></div>
+<div class="spell"><div class="icon"><img src="assets/img/spell_heal.png" alt="heal"></div><div><h4>HEAL<small>STRENGTH 20 · COST 10</small></h4>
+<p>Restores health, never above the max.</p><div style="display:flex;gap:8px;align-items:center"><i class="spr" data-s="fx_aura" data-sc="0.62" data-fps="10" ></i><i class="spr" data-s="fx_heal" data-sc="0.5" data-fps="12" ></i></div></div></div></div>
+<div class="card" data-a="right"><h3>Particle effects</h3><div class="fxs"><div class="fx"><i class="spr" data-s="fx_slash" data-sc="0.78" data-fps="10" ></i><span>slash</span></div><div class="fx"><i class="spr" data-s="fx_claw" data-sc="0.78" data-fps="10" ></i><span>claw</span></div><div class="fx"><i class="spr" data-s="fx_bite" data-sc="0.78" data-fps="10" ></i><span>bite</span></div><div class="fx"><i class="spr" data-s="fx_fireball" data-sc="1.4" data-fps="10" ></i><span>fireball</span></div><div class="fx"><i class="spr" data-s="fx_dig" data-sc="0.82" data-fps="10" ></i><span>dig</span></div><div class="fx"><i class="spr" data-s="fx_leaf_attack" data-sc="0.8" data-fps="10" ></i><span>leaf</span></div><div class="fx"><i class="spr" data-s="fx_aura" data-sc="0.9" data-fps="10" ></i><span>aura</span></div><div class="fx"><i class="spr" data-s="fx_spirit_explosion" data-sc="0.62" data-fps="10" ></i><span>spirit</span></div><div class="fx"><i class="spr" data-s="fx_squid_ink" data-sc="0.9" data-fps="10" ></i><span>ink</span></div><div class="fx"><i class="spr" data-s="fx_raccoon_dash" data-sc="0.72" data-fps="10" ></i><span>dash</span></div><div class="fx"><i class="spr" data-s="fx_sparkle" data-sc="0.62" data-fps="10" ></i><span>sparkle</span></div><div class="fx"><i class="spr" data-s="fx_leaf1" data-sc="0.62" data-fps="12" ></i><span>grass cut</span></div></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">03 · The game</b><span>4 min</span></span><span class="px page-num"></span></div><div class="note" hidden>Five weapons with their own damage and cooldown, two spells that cost energy. Every effect is a ParticleEffect sprite created by AnimationPlayer.</div></section>
+<section class="slide " style="--sec:#f2c14e"><div class="head"><h2>Rules of play</h2><p>The business rules: every number is a named setting in settings.py</p></div><div class="brand px">Grass Hunter</div><div class="rules"><div class="rule" data-a style="--c:#f2c14e"><div class="k">Weapon hit</div><div class="f">damage = attack + weapon</div><p>With the sword: 10 + 15 = 25. Each weapon has its own cooldown.</p></div><div class="rule" data-a style="--c:#b07ce8"><div class="k">Spell hit</div><div class="f">damage = magic + strength</div><p>Flame: 4 + 5 = 9, five times along a line.</p></div><div class="rule" data-a style="--c:#e2574c"><div class="k">After a hit</div><div class="f">invulnerable 500 ms / 300 ms</div><p>Player / enemy. The sprite flickers; the enemy is pushed back by its resistance.</p></div><div class="rule" data-a style="--c:#5aa0e6"><div class="k">Energy</div><div class="f">refill = 0.02 × magic</div><p>Per frame, up to the max. A spell costs 20 (flame) or 10 (heal); refused if not enough.</p></div><div class="rule" data-a style="--c:#9bc53d"><div class="k">Upgrade</div><div class="f">stat × 1.2 · cost × 1.4</div><p>Paid with XP, and the stat never goes above its max.</p></div><div class="rule" data-a style="--c:#71ddee"><div class="k">Death</div><div class="f">health 0 → game over</div><p>XP is earned when a monster dies. At 0 health the world freezes; R restarts with fresh stats.</p></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">03 · The game</b><span>4 min</span></span><span class="px page-num"></span></div><div class="note" hidden>The rules of the game, written as formulas. These are the business rules the automated tests check. All the numbers are named settings, not values hidden in the code.</div></section>
+<section class="slide " style="--sec:#b07ce8"><div class="head"><h2>Clean Code applied</h2><p>The principles of the brief, one by one, with what changed in the code</p></div><div class="brand px">Grass Hunter</div><div class="score"><div class="sc" data-a><div class="n">8<small>names fixed</small></div><div><h4>Explicit names</h4><p>HEIGTH → HEIGHT, BAR_C0LOR (zero) → BAR_COLOR, Item(l, t, w, h) → (left, top, width, height), attribute_nr → stat_count</p></div></div><div class="sc" data-a><div class="n">62<small>docstrings</small></div><div><h4>Short functions, docstrings</h4><p>Every class and non-obvious method documented in one line; long methods annotated step by step</p></div></div><div class="sc" data-a><div class="n">14<small>duplicate image loads removed</small></div><div><h4>No duplication (DRY)</h4><p>Entity.flicker() shared by Player and Enemy, one sound cache, one loop for the 6 leaf animations, death effects reused</p></div></div><div class="sc" data-a><div class="n">6 → 4<small>max nesting</small></div><div><h4>Simple conditions</h4><p>Guard clauses, an if / elif chain for map layers, nested timer checks merged</p></div></div><div class="sc" data-a><div class="n">3<small>splits</small></div><div><h4>One responsibility (SRP)</h4><p>sound.py loads audio, trigger_game_over() split out, monster data only in settings.py</p></div></div><div class="sc" data-a><div class="n">15<small>named settings</small></div><div><h4>Constants, not magic values</h4><p>Start position, stats, upgrade factors, 6 timers (ms), energy rate, animation speed</p></div></div><div class="sc" data-a><div class="n">9<small>dead files deleted</small></div><div><h4>Coherent modules</h4><p>Dead code removed: debug.py, the 8 old map export files, the old CSV loader, unused imports</p></div></div><div class="sc" data-a><div class="n">5<small>cases handled</small></div><div><h4>Errors and edge cases</h4><p>Health kept in [0, max], upgrades capped, spell refused without energy, no crash at distance 0, clear error for a missing file</p></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">04 · Clean Code and tests</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>How each Clean Code principle of the brief was applied, with a number for each. Every change was reviewed before and after, then the game was replayed to check nothing broke.</div></section>
+<section class="slide s-ba" style="--sec:#b07ce8"><div class="head"><h2>Before / after 1</h2><p><b style="color:var(--purple)">DRY</b> · One flicker, written once</p></div><div class="brand px">Grass Hunter</div><div class="ba-top"><div class="card" data-a><h3 style="color:var(--red)">Problem</h3><p>The same 5 lines made the sprite blink after a hit, copied at the end of Player.animate() and Enemy.animate().</p></div>
+<div class="card" data-a><h3 style="color:var(--grass)">Fix</h3><p>Moved into the parent class Entity as flicker(); both subclasses call it.</p></div>
+<div class="metric" data-a><div class="vals"><span class="from">10</span><i>→</i><span class="to">1</span></div><span>duplicated lines → one shared method</span></div></div>
+<div class="ba"><div class="pane before" data-a="left"><div class="tab"><i></i><b>BEFORE</b></div><pre class="code"><div class="cl label">player.py · Player.animate()</div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-com">#flicker</span></div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> <span class="t-kw">not</span> <span class="t-self">self</span>.vulnerable:</div><div class="cl del" style="padding-left:calc(22px + 12ch)">alpha = <span class="t-self">self</span>.<span class="t-fn">wave_value</span>()</div><div class="cl del" style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.image.<span class="t-fn">set_alpha</span>(alpha)</div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-kw">else</span>:</div><div class="cl del" style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.image.<span class="t-fn">set_alpha</span>(<span class="t-num">255</span>)</div><div class="cl label">enemy.py · Enemy.animate()</div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> <span class="t-kw">not</span> <span class="t-self">self</span>.vulnerable:</div><div class="cl del" style="padding-left:calc(22px + 12ch)">alpha = <span class="t-self">self</span>.<span class="t-fn">wave_value</span>()</div><div class="cl del" style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.image.<span class="t-fn">set_alpha</span>(alpha)</div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-kw">else</span>:</div><div class="cl del" style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.image.<span class="t-fn">set_alpha</span>(<span class="t-num">255</span>)</div></pre></div>
+<div class="pane after" data-a="right"><div class="tab"><i></i><b>AFTER</b></div><pre class="code"><div class="cl label">entity.py · Entity, parent of Player and Enemy</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">flicker</span>(<span class="t-self">self</span>):</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-doc">&quot;&quot;&quot;Blink while invulnerable after a hit, fully visible otherwise.&quot;&quot;&quot;</span></div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> <span class="t-kw">not</span> <span class="t-self">self</span>.vulnerable:</div><div class="cl add" style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.image.<span class="t-fn">set_alpha</span>(<span class="t-self">self</span>.<span class="t-fn">wave_value</span>())</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-kw">else</span>:</div><div class="cl add" style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.image.<span class="t-fn">set_alpha</span>(<span class="t-num">255</span>)</div><div class="cl label">player.py · Player.animate()  and  enemy.py · Enemy.animate()</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-self">self</span>.<span class="t-fn">flicker</span>()</div></pre></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">04 · Clean Code and tests</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>DRY: the blink after a hit was copied in two classes. It now lives once in Entity, the parent class, and both children call it.</div></section>
+<section class="slide s-ba" style="--sec:#b07ce8"><div class="head"><h2>Before / after 2</h2><p><b style="color:var(--purple)">SRP</b> · One method, one job</p></div><div class="brand px">Grass Hunter</div><div class="ba-top"><div class="card" data-a><h3 style="color:var(--red)">Problem</h3><p>damage_player() hurt the player AND ran the whole game-over sequence: flag, music stop, jingle, looping music.</p></div>
+<div class="card" data-a><h3 style="color:var(--grass)">Fix</h3><p>The game-over sequence got its own method; damage_player() only deals damage.</p></div>
+<div class="metric" data-a><div class="vals"><span class="from">2</span><i>→</i><span class="to">1</span></div><span>jobs per method</span></div></div>
+<div class="ba"><div class="pane before" data-a="left"><div class="tab"><i></i><b>BEFORE</b></div><pre class="code"><div class="cl label">level.py · Level.damage_player()</div><div class="cl " style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">damage_player</span>(<span class="t-self">self</span>, amount, attack_type):</div><div class="cl " style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> <span class="t-self">self</span>.player.vulnerable:</div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.player.health -= amount</div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.player.vulnerable = <span class="t-kw">False</span></div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.player.hurt_time = pygame.time.<span class="t-fn">get_ticks</span>()</div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-self">self</span>.animation_player.<span class="t-fn">create_particles</span>(...)</div><div class="cl " style="padding-left:calc(22px + 4ch)">&nbsp;</div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-com"># death mechanism</span></div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-kw">if</span> <span class="t-self">self</span>.player.health &lt;=<span class="t-num">0</span> :</div><div class="cl " style="padding-left:calc(22px + 16ch)"><span class="t-self">self</span>.player.health = <span class="t-num">0</span></div><div class="cl del" style="padding-left:calc(22px + 16ch)"><span class="t-self">self</span>.game_over = <span class="t-kw">True</span></div><div class="cl del" style="padding-left:calc(22px + 16ch)">pygame.mixer.<span class="t-fn">stop</span>()</div><div class="cl del" style="padding-left:calc(22px + 16ch)"><span class="t-self">self</span>.game_over_sound.<span class="t-fn">play</span>()</div><div class="cl del" style="padding-left:calc(22px + 16ch)"><span class="t-self">self</span>.game_over_music.<span class="t-fn">play</span>(loops = -<span class="t-num">1</span>)</div></pre></div>
+<div class="pane after" data-a="right"><div class="tab"><i></i><b>AFTER</b></div><pre class="code"><div class="cl label">level.py · Level</div><div class="cl " style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">damage_player</span>(<span class="t-self">self</span>, amount, attack_type):</div><div class="cl " style="padding-left:calc(22px + 8ch)"><span class="t-doc">&quot;&quot;&quot;Hurt the player at most once per invulnerability window.&quot;&quot;&quot;</span></div><div class="cl " style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> <span class="t-self">self</span>.player.vulnerable:</div><div class="cl " style="padding-left:calc(22px + 12ch)">...</div><div class="cl " style="padding-left:calc(22px + 12ch)"><span class="t-kw">if</span> <span class="t-self">self</span>.player.health &lt;= <span class="t-num">0</span>:</div><div class="cl " style="padding-left:calc(22px + 16ch)"><span class="t-self">self</span>.player.health = <span class="t-num">0</span></div><div class="cl add" style="padding-left:calc(22px + 16ch)"><span class="t-self">self</span>.<span class="t-fn">trigger_game_over</span>()</div><div class="cl " style="padding-left:calc(22px + 4ch)">&nbsp;</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">trigger_game_over</span>(<span class="t-self">self</span>):</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-doc">&quot;&quot;&quot;Freeze the game on the game over screen and switch to its music.&quot;&quot;&quot;</span></div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-self">self</span>.game_over = <span class="t-kw">True</span></div><div class="cl add" style="padding-left:calc(22px + 8ch)">pygame.mixer.<span class="t-fn">stop</span>()</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-self">self</span>.game_over_sound.<span class="t-fn">play</span>()</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-self">self</span>.game_over_music.<span class="t-fn">play</span>(loops = -<span class="t-num">1</span>)</div></pre></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">04 · Clean Code and tests</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>SRP: damage_player had two jobs. The game-over sequence is now its own method, easy to find and to change.</div></section>
+<section class="slide s-ba" style="--sec:#b07ce8"><div class="head"><h2>Before / after 3</h2><p><b style="color:var(--purple)">NAMES · CONSTANTS · BUG</b> · The upgrade that went past its max</p></div><div class="brand px">Grass Hunter</div><div class="ba-top"><div class="card" data-a><h3 style="color:var(--red)">Problem</h3><p>The cap check compared values but assigned nothing, so health could reach 358 / 300. Magic numbers 1.2 and 1.4, a long condition and a cryptic name.</p></div>
+<div class="card" data-a><h3 style="color:var(--grass)">Fix</h3><p>Named conditions, the factors moved to settings.py, and min() caps the stat at its maximum.</p></div>
+<div class="metric" data-a><div class="vals"><span class="from">358</span><i>→</i><span class="to">300</span></div><span>max health after upgrades (max = 300)</span></div></div>
+<div class="ba"><div class="pane before" data-a="left"><div class="tab"><i></i><b>BEFORE</b></div><pre class="code"><div class="cl label">upgrade.py · Item.trigger()</div><div class="cl " style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">trigger</span> (<span class="t-self">self</span>, player):</div><div class="cl " style="padding-left:calc(22px + 8ch)">upgrade_attribute = <span class="t-fn">list</span>(player.stats.<span class="t-fn">keys</span>())[<span class="t-self">self</span>.index]</div><div class="cl " style="padding-left:calc(22px + 4ch)">&nbsp;</div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> player.exp &gt;= player.upgrade_cost[upgrade_attribute] <span class="t-kw">and</span>  player.stats[upgrade_attribute] &lt; player.max_stats[upgrade_attribute]:</div><div class="cl " style="padding-left:calc(22px + 12ch)">player.exp -= player.upgrade_cost[upgrade_attribute]</div><div class="cl del" style="padding-left:calc(22px + 12ch)">player.stats[upgrade_attribute] *= <span class="t-num">1.2</span></div><div class="cl del" style="padding-left:calc(22px + 12ch)">player.upgrade_cost[upgrade_attribute] *= <span class="t-num">1.4</span></div><div class="cl " style="padding-left:calc(22px + 4ch)">&nbsp;</div><div class="cl del" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> player.stats[upgrade_attribute] &gt; player.max_stats[upgrade_attribute]:</div><div class="cl del" style="padding-left:calc(22px + 12ch)">player.stats[upgrade_attribute] &gt; player.max_stats[upgrade_attribute]</div></pre></div>
+<div class="pane after" data-a="right"><div class="tab"><i></i><b>AFTER</b></div><pre class="code"><div class="cl label">upgrade.py · Item.trigger()</div><div class="cl " style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">trigger</span>(<span class="t-self">self</span>, player):</div><div class="cl " style="padding-left:calc(22px + 8ch)"><span class="t-doc">&quot;&quot;&quot;Spend XP to raise the selected stat, never above its maximum.&quot;&quot;&quot;</span></div><div class="cl add" style="padding-left:calc(22px + 8ch)">stat_name = <span class="t-fn">list</span>(player.stats.<span class="t-fn">keys</span>())[<span class="t-self">self</span>.index]</div><div class="cl add" style="padding-left:calc(22px + 8ch)">cost = player.upgrade_cost[stat_name]</div><div class="cl add" style="padding-left:calc(22px + 8ch)">max_value = player.max_stats[stat_name]</div><div class="cl add" style="padding-left:calc(22px + 8ch)">has_enough_exp = player.exp &gt;= cost</div><div class="cl add" style="padding-left:calc(22px + 8ch)">is_below_max = player.stats[stat_name] &lt; max_value</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> has_enough_exp <span class="t-kw">and</span> is_below_max:</div><div class="cl " style="padding-left:calc(22px + 12ch)">player.exp -= cost</div><div class="cl add" style="padding-left:calc(22px + 12ch)">player.stats[stat_name] = <span class="t-fn">min</span>(player.stats[stat_name] * <span class="t-const">UPGRADE_STAT_FACTOR</span>, max_value)</div><div class="cl add" style="padding-left:calc(22px + 12ch)">player.upgrade_cost[stat_name] *= <span class="t-const">UPGRADE_COST_FACTOR</span></div><div class="cl label">settings.py</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-const">UPGRADE_STAT_FACTOR</span> = <span class="t-num">1.2</span></div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-const">UPGRADE_COST_FACTOR</span> = <span class="t-num">1.4</span></div></pre></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">04 · Clean Code and tests</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>A real bug found during the review: the cap line compared but did not assign, so health went past its max. The fix also names the conditions and moves the factors to settings. A test now guards this rule.</div></section>
+<section class="slide s-ba" style="--sec:#b07ce8"><div class="head"><h2>Before / after 4</h2><p><b style="color:var(--purple)">OPTIMISATION · DRY · SRP</b> · Load each sound once</p></div><div class="brand px">Grass Hunter</div><div class="ba-top"><div class="card" data-a><h3 style="color:var(--red)">Problem</h3><p>Every enemy loaded and decoded its own 3 sounds: 39 enemies = 117 Sound objects. The same Sound() + set_volume() pair was repeated in 5 classes.</p></div>
+<div class="card" data-a><h3 style="color:var(--grass)">Fix</h3><p>A small sound.py module caches each file: the first call loads it, the next calls reuse it.</p></div>
+<div class="metric" data-a><div class="vals"><span class="from">117</span><i>→</i><span class="to">5</span></div><span>sound objects for the 39 enemies</span></div></div>
+<div class="ba"><div class="pane before" data-a="left"><div class="tab"><i></i><b>BEFORE</b></div><pre class="code"><div class="cl label">enemy.py · Enemy.__init__(), run for each of the 39 enemies</div><div class="cl del" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.death_sound = pygame.mixer.<span class="t-fn">Sound</span>(<span class="t-str">&#x27;../assets/audio/death.wav&#x27;</span>)</div><div class="cl del" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.hit_sound = pygame.mixer.<span class="t-fn">Sound</span>(<span class="t-str">&#x27;../assets/audio/hit.wav&#x27;</span>)</div><div class="cl del" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.attack_sound = pygame.mixer.<span class="t-fn">Sound</span>(monster_info[<span class="t-str">&#x27;attack_sound&#x27;</span>])</div><div class="cl del" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.death_sound.<span class="t-fn">set_volume</span>(<span class="t-num">0.2</span>)</div><div class="cl del" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.hit_sound.<span class="t-fn">set_volume</span>(<span class="t-num">0.2</span>)</div><div class="cl del" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.attack_sound.<span class="t-fn">set_volume</span>(<span class="t-num">0.25</span>)</div><div class="cl label">+ the same Sound() / set_volume() pair in Player, MagicPlayer, Level and Game</div></pre></div>
+<div class="pane after" data-a="right"><div class="tab"><i></i><b>AFTER</b></div><pre class="code"><div class="cl label">sound.py · new module, the only place that loads audio</div><div class="cl add" style="padding-left:calc(22px + 4ch)">_loaded_sounds = {}</div><div class="cl " style="padding-left:calc(22px + 4ch)">&nbsp;</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-kw">def</span> <span class="t-fn">load_sound</span>(path, volume=<span class="t-num">1.0</span>):</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-doc">&quot;&quot;&quot;Load a sound the first time it is asked for, then reuse it.&quot;&quot;&quot;</span></div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-kw">if</span> path <span class="t-kw">not</span> <span class="t-kw">in</span> _loaded_sounds:</div><div class="cl add" style="padding-left:calc(22px + 12ch)">sound = pygame.mixer.<span class="t-fn">Sound</span>(path)</div><div class="cl add" style="padding-left:calc(22px + 12ch)">sound.<span class="t-fn">set_volume</span>(volume)</div><div class="cl add" style="padding-left:calc(22px + 12ch)">_loaded_sounds[path] = sound</div><div class="cl add" style="padding-left:calc(22px + 8ch)"><span class="t-kw">return</span> _loaded_sounds[path]</div><div class="cl label">enemy.py · Enemy.__init__()</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.death_sound = <span class="t-fn">load_sound</span>(<span class="t-str">&#x27;../assets/audio/death.ogg&#x27;</span>, <span class="t-num">0.2</span>)</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.hit_sound = <span class="t-fn">load_sound</span>(<span class="t-str">&#x27;../assets/audio/hit.ogg&#x27;</span>, <span class="t-num">0.2</span>)</div><div class="cl add" style="padding-left:calc(22px + 4ch)"><span class="t-self">self</span>.attack_sound = <span class="t-fn">load_sound</span>(monster_info[<span class="t-str">&#x27;attack_sound&#x27;</span>], <span class="t-num">0.25</span>)</div></pre></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">04 · Clean Code and tests</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>Optimisation: every enemy decoded the same sound files. Now sound.py loads each file once and shares it: 117 objects become 5, and only one module touches audio.</div></section>
+<section class="slide " style="--sec:#b07ce8"><div class="head"><h2>Tests and reliability</h2><p>26 automated tests on the rules of the game</p></div><div class="brand px">Grass Hunter</div><div class="tests"><div><div class="term" data-a="left"><div class="bar"><i></i><i></i><i></i><span>grass_hunter_2D</span></div>
+<pre><span class="muted">$</span> python -m pytest
+<span class="muted">collected 26 items</span>
+
+tests <span class="dots"><span style="--k:0">.</span><span style="--k:1">.</span><span style="--k:2">.</span><span style="--k:3">.</span><span style="--k:4">.</span><span style="--k:5">.</span><span style="--k:6">.</span><span style="--k:7">.</span><span style="--k:8">.</span><span style="--k:9">.</span><span style="--k:10">.</span><span style="--k:11">.</span><span style="--k:12">.</span><span style="--k:13">.</span><span style="--k:14">.</span><span style="--k:15">.</span><span style="--k:16">.</span><span style="--k:17">.</span><span style="--k:18">.</span><span style="--k:19">.</span><span style="--k:20">.</span><span style="--k:21">.</span><span style="--k:22">.</span><span style="--k:23">.</span><span style="--k:24">.</span><span style="--k:25">.</span></span>
+
+<span class="result ok">========== 26 passed in 8.8 s ==========</span></pre></div>
+<div class="env"><div class="card" data-a><h3>Reproducible</h3><p>Versions pinned in requirements.txt; fresh install checked on Python 3.12 and 3.14.</p></div>
+<div class="card" data-a><h3>Test data</h3><p>The Tiled map: 39 monsters in 3 zones. Start XP set to 5000 for the demo.</p></div>
+<div class="card" data-a><h3>No window</h3><p>Tests run headless: no window, no sound card needed.</p></div></div></div>
+<div class="card" data-a="right"><h3>What the tests check</h3><div class="tfile" data-a><code>test_upgrade.py</code><b>6</b><span>XP spent, stat ×1.2, cost ×1.4, capped at max, refused without XP or at max</span></div><div class="tfile" data-a><code>test_player.py</code><b>4</b><span>weapon and spell damage formulas, energy refill, energy cap</span></div><div class="tfile" data-a><code>test_magic.py</code><b>4</b><span>heal adds health and costs energy, heal cap, no energy → no spell, 5 fire bursts</span></div><div class="tfile" data-a><code>test_combat.py</code><b>9</b><span>damage, invulnerability, health ≥ 0, game over, enemy damage, XP on death, distance 0</span></div><div class="tfile" data-a><code>test_game_data.py</code><b>3</b><span>every Tiled monster exists in settings, every animation has frames, frame order</span></div></div></div><div class="foot"><span class="chip-sec"><i></i><b class="px">04 · Clean Code and tests</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>Automated tests with pytest on the business rules: upgrades, damage formulas, spells, combat and the map data. They run without a window in about 9 seconds. The environment is pinned so the teacher gets the same versions.</div></section>
+<section class="slide s-end" style="--sec:#e2574c"><h2 data-a="zoom">QUESTIONS?</h2><p class="sub" data-a>Thank you for listening.</p><div class="takeaways"><div class="card" data-a style="border-top:6px solid #f2c14e"><h3 style="color:#f2c14e">OOP where it helps</h3><p>Entity for shared behaviour, composition around Level, callbacks for low coupling.</p></div><div class="card" data-a style="border-top:6px solid #9bc53d"><h3 style="color:#9bc53d">Content is data</h3><p>Monsters, weapons, spells and stats in settings.py; the world in Tiled.</p></div><div class="card" data-a style="border-top:6px solid #b07ce8"><h3 style="color:#b07ce8">Clean, then proven</h3><p>Each change reviewed before / after, then checked by tests and a full play-through.</p></div></div>
+<div class="links" data-a><span><b>Code</b> github.com/Fuestsugama/grass_hunter_2D</span><span><b>Design</b> docs/design_document.pdf</span><span><b>Visual guide</b> docs/grass_hunter_visual.pdf</span></div>
+<div class="cast"><i class="spr" data-s="slime3_move" data-sc="1.6" data-fps="7" ></i><i class="spr" data-s="snake3_move" data-sc="1.6" data-fps="7" ></i><i class="spr" data-s="spider_yellow_move" data-sc="1.6" data-fps="7" ></i><i class="spr" data-s="flam_move" data-sc="1.6" data-fps="7" ></i><i class="spr" data-s="hero_down" data-sc="2.2" data-fps="7" ></i><i class="spr" data-s="mole_move" data-sc="1.6" data-fps="7" ></i><i class="spr" data-s="gold_racoon_move" data-sc="1.6" data-fps="7" ></i><i class="spr" data-s="trex_move" data-sc="1.6" data-fps="7" ></i></div><div class="foot"><span class="chip-sec"><i></i><b class="px">05 · Questions</b><span>3 min</span></span><span class="px page-num"></span></div><div class="note" hidden>Three takeaways, then questions. Be ready to justify a design choice, point to a problem in the code, or propose an improvement (for example the stored ideas: item_overlay, wrap-around with modulo, asset path constants).</div></section>
+</div>
+<div id="progress"></div><div id="notes"></div>
+<div id="hint">← → or click to navigate · F fullscreen · N speaker notes</div>
+<script src="assets/sprites/manifest.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var isPrint = /[?&]print\b/.test(location.search);
+  if (isPrint) root.classList.add('print');
+
+  // sprites: each <i class="spr" data-s="name" data-sc="3" data-fps="8"> plays its strip
+  document.querySelectorAll('.spr').forEach(function (el) {
+    var d = (window.SPRITES || {})[el.dataset.s];
+    if (!d) { el.style.display = 'none'; return; }
+    var fps = parseFloat(el.dataset.fps || 8);
+    el.style.setProperty('--w', d.w);
+    el.style.setProperty('--h', d.h);
+    el.style.setProperty('--n', d.n);
+    el.style.setProperty('--sc', el.dataset.sc || 1);
+    el.style.setProperty('--dur', (d.n / fps).toFixed(2) + 's');
+    el.style.backgroundImage = "url('assets/sprites/" + el.dataset.s + ".png')";
+    if (d.n === 1) el.style.animation = 'none';
+    // in the PDF, show a frame from the middle of the animation (the first one is often empty)
+    if (isPrint && d.n > 1) el.style.backgroundPositionX = (-(d.best != null ? d.best : Math.floor(d.n / 2)) * d.w * (el.dataset.sc || 1)) + 'px';
+  });
+
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+
+  // stagger index for the entrance animation, per slide
+  slides.forEach(function (slide, n) {
+    slide.querySelectorAll('[data-a]').forEach(function (el, i) { el.style.setProperty('--i', el.dataset.i || i); });
+    slide.querySelectorAll('.uml-class').forEach(function (el, i) { el.style.setProperty('--i', i); });
+    slide.querySelectorAll('.code').forEach(function (pre) {
+      var k = 0;
+      pre.querySelectorAll('.cl.del, .cl.add').forEach(function (line) { line.style.setProperty('--k', k++); });
+    });
+    var page = slide.querySelector('.page-num');
+    if (page) page.textContent = (n + 1) + ' / ' + total;
+  });
+  if (isPrint) { slides.forEach(function (s) { s.classList.add('active'); }); return; }
+
+  var stage = document.getElementById('stage');
+  function fit() {
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = 'scale(' + s + ') translate(-50%, -50%)';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  var current = 0;
+  var notes = document.getElementById('notes');
+  var progress = document.getElementById('progress');
+  function show(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.remove('active');
+    // restart entrance animations when coming back to a slide
+    void slides[n].offsetWidth;
+    slides[n].classList.add('active');
+    current = n;
+    progress.style.width = ((n + 1) / total * 100) + '%';
+    progress.style.background = getComputedStyle(slides[n]).getPropertyValue('--sec') || '';
+    var note = slides[n].querySelector('.note');
+    notes.innerHTML = '<b>' + (n + 1) + ' / ' + total + ' · Speaker notes</b><br>' + (note ? note.innerHTML : '');
+    if (location.hash !== '#' + (n + 1)) history.replaceState(null, '', '#' + (n + 1));
+  }
+  document.addEventListener('keydown', function (e) {
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); show(current + 1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); show(current - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+    else if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('show-notes');
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) root.requestFullscreen && root.requestFullscreen();
+      else document.exitFullscreen && document.exitFullscreen();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a')) return;
+    show(e.clientX > window.innerWidth / 3 ? current + 1 : current - 1);
+  });
+  var start = parseInt((location.hash || '#1').slice(1), 10) - 1;
+  slides[0].classList.remove('active');
+  current = isNaN(start) ? 0 : Math.max(0, Math.min(total - 1, start));
+  show(current);
+  setTimeout(function () { var h = document.getElementById('hint'); if (h) h.style.opacity = 0; }, 5000);
+})();
+
+</script>
+</body></html>
