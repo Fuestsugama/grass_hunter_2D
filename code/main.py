@@ -1,4 +1,4 @@
-import pygame, sys, os
+import pygame, sys, os, asyncio
 
 # run from this file's folder so the ../assets paths always work
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +21,8 @@ class Game:
         self.main_sound = load_sound('../assets/audio/main.ogg', 0.5)
         self.main_sound.play(loops = -1)
 
-    def run(self):
+    async def run(self):
+        """Main loop: handle events, then update and draw the level, 60 times per second."""
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -39,10 +40,14 @@ class Game:
             self.level.run()
             pygame.display.update()
             self.clock.tick(FPS)
+            await asyncio.sleep(0)   # gives control back to the browser every frame (web version)
+
+async def main():
+    game = Game()
+    await game.run()
 
 if __name__ == '__main__':
-    game = Game()
-    game.run()
+    asyncio.run(main())
 
 
 
