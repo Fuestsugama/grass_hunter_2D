@@ -1,6 +1,6 @@
 import pygame
 from pytmx.util_pygame import load_pygame
-from settings import *
+from settings import TILESIZE, MAP_TILESIZE, PLAYER_START_POS
 from tile import Tile
 from player import Player
 from random import randint

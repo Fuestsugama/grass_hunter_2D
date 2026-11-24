@@ -1,5 +1,5 @@
 import pygame
-from settings import *
+from settings import monster_data, ENEMY_ATTACK_COOLDOWN, ENEMY_INVULNERABILITY
 from entity import Entity
 from support import import_folder
 from sound import load_sound

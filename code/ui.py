@@ -1,5 +1,9 @@
 import pygame
-from settings import *
+from settings import (
+    weapon_data, magic_data, BAR_HEIGHT, HEALTH_BAR_WIDTH, ENERGY_BAR_WIDTH, ITEM_BOX_SIZE,
+    UI_FONT, UI_FONT_SIZE, UI_BG_COLOR, UI_BORDER_COLOR, UI_BORDER_COLOR_ACTIVE,
+    TEXT_COLOR, HEALTH_COLOR, ENERGY_COLOR,
+)
 
 class UI:
     """Draws the HUD: health and energy bars, XP, and the current weapon and spell."""

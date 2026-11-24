@@ -1,5 +1,9 @@
 import pygame
-from settings import *
+from settings import (
+    UI_FONT, UI_FONT_SIZE, UI_BG_COLOR, UI_BORDER_COLOR, TEXT_COLOR, TEXT_COLOR_SELECTED,
+    BAR_COLOR, BAR_COLOR_SELECTED, UPGRADE_BG_COLOR_SELECTED,
+    UPGRADE_STAT_FACTOR, UPGRADE_COST_FACTOR, MENU_INPUT_COOLDOWN,
+)
 
 class Upgrade: 
     """The upgrade menu (key M): choose a stat with the arrows and spend XP on it with Space."""

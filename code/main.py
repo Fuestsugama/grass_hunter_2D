@@ -2,7 +2,7 @@ import pygame, sys, os, asyncio
 
 # run from this file's folder so the ../assets paths always work
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-from settings import *
+from settings import WIDTH, HEIGHT, FPS, WATER_COLOR
 from level import Level
 from sound import load_sound
 

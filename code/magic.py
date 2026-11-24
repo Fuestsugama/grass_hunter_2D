@@ -1,5 +1,5 @@
 import pygame 
-from settings import * 
+from settings import TILESIZE
 from random import randint
 from sound import load_sound
 

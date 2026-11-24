@@ -1,5 +1,9 @@
 import pygame
-from settings import *
+from settings import (
+    weapon_data, magic_data, HITBOX_OFFSET,
+    PLAYER_STATS, PLAYER_MAX_STATS, PLAYER_UPGRADE_COST, PLAYER_START_EXP,
+    PLAYER_ATTACK_COOLDOWN, SWITCH_COOLDOWN, PLAYER_INVULNERABILITY, ENERGY_RECOVERY_RATE,
+)
 from support import import_folder
 from entity import Entity
 from sound import load_sound

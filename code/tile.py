@@ -1,5 +1,5 @@
 import pygame 
-from settings import *
+from settings import TILESIZE, HITBOX_OFFSET
 
 class Tile(pygame.sprite.Sprite):
     """A static map tile (grass, object or invisible wall) with a hitbox for collisions."""

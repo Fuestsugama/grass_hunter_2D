@@ -1,5 +1,5 @@
 import pygame 
-from settings import *
+from settings import UI_FONT, UI_FONT_SIZE, HEALTH_COLOR, TEXT_COLOR
 
 class GameOver:
     """The game over screen drawn over the frozen game."""
