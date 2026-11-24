@@ -51,6 +51,14 @@ python code/main.py
 The virtual environment keeps these versions separate from other Python projects.
 Do not install `pygame` and `pygame-ce` together: both provide the `pygame` module and conflict.
 
+## Tests
+The main rules (upgrades, damage, spells, combat, map data) are checked by automated tests with pytest:
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+They run without opening a window or playing sound.
+
 ## Project structure
 ```
 assets/

@@ -3,5 +3,6 @@ __pycache__/
 _unused/
 .vscode/
 .venv/
+.pytest_cache/
 build/
 release/
