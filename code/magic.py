@@ -30,20 +30,14 @@ class MagicPlayer:
             player.energy -= cost 
             self.sounds['flame'].play()
 
-            if player.status.split('_')[0] =='right': direction = pygame.math.Vector2(1,0)
-            elif player.status.split('_')[0] =='left': direction = pygame.math.Vector2(-1,0)
-            elif player.status.split('_')[0] =='up': direction = pygame.math.Vector2(0,-1)
+            facing = player.status.split('_')[0]
+            if facing == 'right': direction = pygame.math.Vector2(1,0)
+            elif facing == 'left': direction = pygame.math.Vector2(-1,0)
+            elif facing == 'up': direction = pygame.math.Vector2(0,-1)
             else: direction = pygame.math.Vector2(0,1)
 
-            for i in range(1,6): # offset of 1 ==> cast the spell at at least a range of 1 so 64 pixels 
-                if direction.x: #horizontal
-                    offset_x = (direction.x * i ) * TILESIZE
-                    x = player.rect.centerx + offset_x + randint( -TILESIZE // 3, TILESIZE // 3) # render effect 
-                    y = player.rect.centery + randint( -TILESIZE // 3, TILESIZE // 3)
-                    self.animation_player.create_particles('flame', (x,y), groups)
-
-                else:  # vertical 
-                    offset_y = (direction.y * i ) * TILESIZE
-                    x = player.rect.centerx  + randint( -TILESIZE // 3, TILESIZE // 3) # render effect 
-                    y = player.rect.centery  + offset_y + randint( -TILESIZE // 3, TILESIZE // 3)
-                    self.animation_player.create_particles('flame', (x,y), groups)
+            for i in range(1,6): # offset of 1 ==> cast the spell at at least a range of 1 so 64 pixels
+                # direction is (±1, 0) or (0, ±1): the axis not used adds 0, so one formula covers the 4 directions
+                x = player.rect.centerx + direction.x * i * TILESIZE + randint( -TILESIZE // 3, TILESIZE // 3) # render effect
+                y = player.rect.centery + direction.y * i * TILESIZE + randint( -TILESIZE // 3, TILESIZE // 3)
+                self.animation_player.create_particles('flame', (x,y), groups)
