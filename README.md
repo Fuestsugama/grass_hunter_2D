@@ -69,7 +69,9 @@ assets/
   animated/, vehicles/   extra Tiled tilesets from the asset pack
 code/         game source (main.py is the entry point)
 maps/         world_map.tmx (Tiled map read by the game)
-docs/         visual guide PDF and cover image
+docs/         design document (with the UML class diagram), visual guide PDF, cover image
+presentation/ slides for the oral defence (open slides.html in a browser; slides.pdf is a static copy)
+tests/        automated tests (pytest)
 ```
 
 ## Design choices (Clean Code)
